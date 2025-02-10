@@ -46,8 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("sisi", $author, $user_id, $comment, $post_id);
 
     if ($stmt->execute()) {
-        // Redirect back to the homepage with a success status
-        header("Location: ../view/dashboard_pages/admin_dashboard.php?status=success&closeModal=commentModal" . $post_id);
+        // Determine the source of the request and redirect accordingly
+        if (strpos($_SERVER['HTTP_REFERER'], 'admin_dashboard.php') !== false) {
+            // Redirect back to the admin dashboard with a success status
+            header("Location: ../view/dashboard_pages/admin_dashboard.php?status=success&closeModal=commentModal" . $post_id);
+        } else {
+            // Redirect back to the user homepage with a success status
+            header("Location: ../view/homepages/homepage1.php?status=success&closeModal=commentModal" . $post_id);
+        }
         exit;
     } else {
         // Handle error and show a message
