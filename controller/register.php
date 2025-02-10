@@ -4,18 +4,23 @@ include '../model/connect.php';
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signUp'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
-    $firstName = trim($_POST['fName']);
-    $lastName = trim($_POST['lName']);
+    $firstName = trim($_POST['firstName']);
+    $lastName = trim($_POST['lastName']);
     $email = trim($_POST['email']);
     $password = $_POST['password'];
-    $confirmPassword = $_POST['confirmPassword'];
+    $confirmPassword = $_POST['confirm_password'];
+    $role = isset($_POST['role']) ? $_POST['role'] : 'user'; // Default role is 'user'
 
     // Validate passwords
     if ($password !== $confirmPassword) {
         $_SESSION['error_message'] = "Passwords do not match!";
-        header("Location: ../index.php#signupForm");
+        if (isset($_POST['create_account'])) {
+            header("Location: ../view/admin/account_management.php");
+        } else {
+            header("Location: ../index.php#signupForm");
+        }
         exit;
     }
 
@@ -26,7 +31,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signUp'])) {
         !preg_match("/[0-9]/", $password) || 
         !preg_match("/[!@#$%^&*(),.?\":{}|<>]/", $password)) {
         $_SESSION['error_message'] = "Password must be at least 12 characters long, contain an uppercase letter, a lowercase letter, a number, and a special character.";
-        header("Location: ../index.php#signupForm");
+        if (isset($_POST['create_account'])) {
+            header("Location: ../view/admin/account_management.php");
+        } else {
+            header("Location: ../index.php#signupForm");
+        }
         exit;
     }
 
@@ -41,26 +50,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signUp'])) {
 
     if ($result->num_rows > 0) {
         $_SESSION['error_message'] = "Username or Email already exists!";
-        header("Location: ../index.php#signupForm");
+        if (isset($_POST['create_account'])) {
+            header("Location: ../view/dashboard_pages/account_management.php");
+        } else {
+            header("Location: ../index.php#signupForm");
+        }
         exit;
     }
 
     // Insert the new user with hashed password
-    $insertQuery = $CONN->prepare("INSERT INTO users (username, firstName, lastName, email, password) VALUES (?, ?, ?, ?, ?)");
-    $insertQuery->bind_param("sssss", $username, $firstName, $lastName, $email, $hashedPassword);
+    $insertQuery = $CONN->prepare("INSERT INTO users (username, firstName, lastName, email, password, role) VALUES (?, ?, ?, ?, ?, ?)");
+    $insertQuery->bind_param("ssssss", $username, $firstName, $lastName, $email, $hashedPassword, $role);
 
     if ($insertQuery->execute()) {
         $_SESSION['success_message'] = "Registration successful! You can now log in.";
-        header("Location: ../index.php");
+        if (isset($_POST['create_account'])) {
+            header("Location: ../view/dashboard_pages/account_management.php");
+        } else {
+            header("Location: ../index.php");
+        }
         exit;
     } else {
         $_SESSION['error_message'] = "An error occurred during registration. Please try again.";
-        header("Location: ../index.php#signupForm");
+        if (isset($_POST['create_account'])) {
+            header("Location: ../view/admin/account_management.php#signupModal");
+        } else {
+            header("Location: ../index.php#signupForm");
+        }
         exit;
     }
-
-    // Close database connections
-    $checkQuery->close();
-    $insertQuery->close();
-    $CONN->close();
 }

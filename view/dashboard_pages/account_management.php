@@ -11,36 +11,6 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
 // Fetch all users from the database
 $query = "SELECT user_id, username, email, role, created_at FROM users"; // Added role before created_at
 $result = $CONN->query($query);
-
-// Handle form submission for account creation
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
-    $first_name = $_POST['firstName'];
-    $last_name = $_POST['lastName'];
-    $username = $_POST['username'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
-
-    // Check if passwords match
-    if ($password !== $confirm_password) {
-        echo "<script>alert('Passwords do not match. Please try again.');</script>";
-    } else {
-        // Hash the password before storing it
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-        $role = 'user'; // Automatically set role as 'user'
-
-        // Insert new user into the database
-        $insert_query = "INSERT INTO users (firstName, lastName, username, email, password, role) VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = $CONN->prepare($insert_query);
-        $stmt->bind_param('ssssss', $first_name, $last_name, $username, $email, $hashed_password, $role);
-
-        if ($stmt->execute()) {
-            echo "<script>alert('Account created successfully!');</script>";
-        } else {
-            echo "<script>alert('Error creating account. Please try again.');</script>";
-        }
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -183,9 +153,129 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
             </div>
         </div>
 
+        <!-- Previous code remains the same until the Create Account Modal -->
+
+        <!-- Create Account Modal -->
+        <div class="modal fade" id="signupModal" tabindex="-1" aria-labelledby="signupModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="signupModalLabel">Create New Account</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="../../controller/register.php" method="POST">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="firstName" name="firstName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="lastName" name="lastName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <!-- Password Strength Indicator -->
+                                <div id="password-strength" class="mt-2">
+                                    <div id="password-strength-text" class="small"></div>
+                                    <div id="password-strength-bar" class="progress mt-1">
+                                        <div id="password-strength-progress" class="progress-bar" role="progressbar"
+                                            style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                                <!-- Password Requirements -->
+                                <div id="password-requirements" class="small mt-2">
+                                    <ul class="list-unstyled">
+                                        <li id="length" class="text-danger">At least 12 characters</li>
+                                        <li id="uppercase" class="text-danger">Contains an uppercase letter</li>
+                                        <li id="lowercase" class="text-danger">Contains a lowercase letter</li>
+                                        <li id="number" class="text-danger">Contains a number</li>
+                                        <li id="special" class="text-danger">Contains a special character</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="confirm_password"
+                                        name="confirm_password" required>
+                                    <button type="button" class="btn btn-outline-secondary" id="toggleConfirmPassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" name="role" value="user">
+                            <button type="submit" class="btn btn-primary" name="create_account">Create Account</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
+        const passwordInput = document.getElementById('password');
+        const passwordStrengthText = document.getElementById('password-strength-text');
+        const passwordStrengthProgress = document.getElementById('password-strength-progress');
+        const passwordRequirements = document.getElementById('password-requirements').querySelectorAll('li');
+
+        passwordInput.addEventListener('input', function () {
+            const password = passwordInput.value;
+
+            // Define password requirements
+            const minLength = 12;
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasLowercase = /[a-z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+            // Calculate password strength
+            let strength = 0;
+            if (password.length >= minLength) strength += 20;
+            if (hasUppercase) strength += 20;
+            if (hasLowercase) strength += 20;
+            if (hasNumber) strength += 20;
+            if (hasSpecial) strength += 20;
+
+            // Update progress bar and text
+            passwordStrengthProgress.style.width = `${strength}%`;
+            if (strength < 40) {
+                passwordStrengthProgress.classList.remove('bg-success', 'bg-warning');
+                passwordStrengthProgress.classList.add('bg-danger');
+                passwordStrengthText.textContent = 'Weak';
+            } else if (strength < 80) {
+                passwordStrengthProgress.classList.remove('bg-danger', 'bg-success');
+                passwordStrengthProgress.classList.add('bg-warning');
+                passwordStrengthText.textContent = 'Moderate';
+            } else {
+                passwordStrengthProgress.classList.remove('bg-danger', 'bg-warning');
+                passwordStrengthProgress.classList.add('bg-success');
+                passwordStrengthText.textContent = 'Strong';
+            }
+
+            // Update password requirements list
+            passwordRequirements[0].classList.toggle('text-success', password.length >= minLength);
+            passwordRequirements[1].classList.toggle('text-success', hasUppercase);
+            passwordRequirements[2].classList.toggle('text-success', hasLowercase);
+            passwordRequirements[3].classList.toggle('text-success', hasNumber);
+            passwordRequirements[4].classList.toggle('text-success', hasSpecial);
+        });
+
         function openEditModal(userId) {
             // Fetch user data via AJAX
             fetch(`../../controller/edit_account.php?id=${userId}`)
@@ -204,6 +294,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
                 .catch(error => console.error("Error fetching user data:", error));
         }
 
+        // // Toggle password visibility
+        // const togglePassword = document.getElementById('togglePassword');
+        // const passwordInput = document.getElementById('password');
+        // const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        // const confirmPasswordInput = document.getElementById('confirm_password');
+
+        // togglePassword.addEventListener('click', function () {
+        //     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        //     passwordInput.setAttribute('type', type);
+        //     this.querySelector('i').classList.toggle('bi-eye');
+        //     this.querySelector('i').classList.toggle('bi-eye-slash');
+        // });
+
+        // toggleConfirmPassword.addEventListener('click', function () {
+        //     const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        //     confirmPasswordInput.setAttribute('type', type);
+        //     this.querySelector('i').classList.toggle('bi-eye');
+        //     this.querySelector('i').classList.toggle('bi-eye-slash');
+        // });
+
         // Handle form submission
         document.getElementById("editUserForm").addEventListener("submit", function (event) {
             event.preventDefault();
@@ -213,7 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
             const email = document.getElementById("edit_email").value;
             const role = document.getElementById("edit_role").value;
 
-            fetch("../../controller/edit_account.php", {
+            fetch("../../controller/register.php", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_id: userId, username: username, email: email, role: role })
