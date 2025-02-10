@@ -1,0 +1,56 @@
+-- Create the users table with a user_id column
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,  -- User-specific ID
+    username VARCHAR(100) NOT NULL,
+    firstName VARCHAR(100) NOT NULL,
+    lastName VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reset_token_hash VARCHAR(255) NULL,
+    reset_token_expires_at DATETIME NULL
+);
+
+-- Create the posts table (admins can create posts, no user_id)
+CREATE TABLE posts (
+    post_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    -- No user_id column in posts as only admins create posts
+);
+
+-- Create the comments table (users can comment, link to user_id)
+CREATE TABLE comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL, -- Reference to the post the comment belongs to
+    user_id INT NOT NULL, -- Reference to the user who commented
+    author VARCHAR(100) NOT NULL,  -- Store the username of the user who commented
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    comment TEXT NOT NULL,
+    FOREIGN KEY (post_id) REFERENCES posts(post_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE comment_replies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    comment_id INT NOT NULL,
+    user_id INT NOT NULL,
+    reply_content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id) REFERENCES comments(id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+
+ALTER TABLE users 
+ADD COLUMN reset_token_hash VARCHAR(255) NULL,
+ADD COLUMN reset_token_expires_at DATETIME NULL;
+
+INSERT INTO `users`(`user_id`, `username`, `firstName`, `lastName`, `email`, `password`, `role`) 
+VALUES (1,'admin_user','Admin','User','admin@example.com','hashed_password', 'admin')
+
+ALTER TABLE comments
+ADD COLUMN post_id INT NOT NULL,
+ADD FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE ON UPDATE CASCADE;
