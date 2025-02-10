@@ -5,64 +5,82 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-include '../../model/connect.php';
+require '../model/connect.php'; // Ensure the correct path
 
-// Handle POST request to update a post
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
-    $postId = intval($_POST['post_id']);
-    $title = trim($_POST['title']);
-    $content = trim($_POST['content']);
+// Check if connection is established
+if (!$CONN) {
+    echo json_encode(['error' => 'Database connection failed.']);
+    exit;
+}
+
+// Handle POST request to update an account
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Decode JSON input if sent as JSON
+    $inputData = json_decode(file_get_contents("php://input"), true);
+
+    // Use $_POST if JSON decoding fails
+    $userId = isset($inputData['user_id']) ? intval($inputData['user_id']) : intval($_POST['user_id'] ?? 0);
+    $username = trim($inputData['username'] ?? $_POST['username'] ?? '');
+    $email = trim($inputData['email'] ?? $_POST['email'] ?? '');
+    $role = trim($inputData['role'] ?? $_POST['role'] ?? '');
 
     // Validate input
-    if (empty($title) || empty($content)) {
-        echo json_encode(['error' => 'Title and content cannot be empty.']);
+    if (empty($userId) || empty($username) || empty($email) || empty($role)) {
+        echo json_encode(['error' => 'All fields are required.']);
         exit;
     }
 
-    if (strlen($title) > 255) {
-        echo json_encode(['error' => 'Title is too long.']);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['error' => 'Invalid email format.']);
         exit;
     }
 
-    $updateQuery = "UPDATE posts SET title = ?, content = ? WHERE post_id = ?";
+    // Update account details
+    $updateQuery = "UPDATE users SET username = ?, email = ?, role = ? WHERE user_id = ?";
     $updateStmt = $CONN->prepare($updateQuery);
-    $updateStmt->bind_param('ssi', $title, $content, $postId);
+    if (!$updateStmt) {
+        echo json_encode(['error' => 'Failed to prepare statement.']);
+        exit;
+    }
+
+    $updateStmt->bind_param('sssi', $username, $email, $role, $userId);
 
     if ($updateStmt->execute()) {
-        if ($updateStmt->affected_rows > 0) {
-            echo json_encode(['success' => 'Post updated successfully.']);
-        } else {
-            echo json_encode(['message' => 'No changes made.']);
-        }
+        echo json_encode(['success' => ($updateStmt->affected_rows > 0) ? 'Account updated successfully.' : 'No changes made.']);
     } else {
-        error_log("Error updating post: " . $CONN->error);
-        echo json_encode(['error' => 'Failed to update post.']);
+        echo json_encode(['error' => 'Failed to update account.']);
     }
+    
     $updateStmt->close();
     exit;
 }
 
-// Handle GET request to fetch post data for editing
-if (isset($_GET['id'])) {
-    $postId = intval($_GET['id']);
+// Handle GET request to fetch user data
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
+    $userId = intval($_GET['id']);
 
-    $postQuery = "SELECT post_id, title, content FROM posts WHERE post_id = ?";
-    $stmt = $CONN->prepare($postQuery);
-    $stmt->bind_param('i', $postId);
+    $userQuery = "SELECT user_id, username, email, role FROM users WHERE user_id = ?";
+    $stmt = $CONN->prepare($userQuery);
+    if (!$stmt) {
+        echo json_encode(['error' => 'Failed to prepare statement.']);
+        exit;
+    }
+
+    $stmt->bind_param('i', $userId);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        $post = $result->fetch_assoc();
-        echo json_encode($post); // Return post data as JSON
+        echo json_encode($result->fetch_assoc());
     } else {
-        http_response_code(404);
-        echo json_encode(['error' => 'Post not found.']);
+        echo json_encode(['error' => 'User not found.']);
     }
+
     $stmt->close();
     exit;
 }
 
+// Invalid request
 http_response_code(400);
 echo json_encode(['error' => 'Invalid request.']);
 ?>

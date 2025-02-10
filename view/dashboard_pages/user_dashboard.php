@@ -60,7 +60,7 @@ if ($result) {
 
         function startTimer() {
             clearTimeout(timeout);
-            timeout = setTimeout(logoutUser, 5000); // 5 minutes (300000ms) timeout
+            timeout = setTimeout(logoutUser, 300000); // 5 minutes (300000ms) timeout
         }
 
         function logoutUser() {

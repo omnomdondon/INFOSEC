@@ -9,7 +9,7 @@ include '../../model/connect.php';
 
 // Handle POST request to update a post
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
-    $postId = $_POST['post_id'];
+    $postId = intval($_POST['post_id']);
     $title = trim($_POST['title']);
     $content = trim($_POST['content']);
 
@@ -38,14 +38,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
         error_log("Error updating post: " . $CONN->error);
         echo json_encode(['error' => 'Failed to update post.']);
     }
+    $updateStmt->close();
     exit;
 }
 
 // Handle GET request to fetch post data for editing
 if (isset($_GET['id'])) {
-    $postId = $_GET['id'];
+    $postId = intval($_GET['id']);
 
-    $postQuery = "SELECT * FROM posts WHERE post_id = ?";
+    $postQuery = "SELECT post_id, title, content FROM posts WHERE post_id = ?";
     $stmt = $CONN->prepare($postQuery);
     $stmt->bind_param('i', $postId);
     $stmt->execute();
@@ -58,6 +59,7 @@ if (isset($_GET['id'])) {
         http_response_code(404);
         echo json_encode(['error' => 'Post not found.']);
     }
+    $stmt->close();
     exit;
 }
 

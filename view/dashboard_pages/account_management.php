@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
 
         function startTimer() {
             clearTimeout(timeout);
-            timeout = setTimeout(logoutUser, 5000); // 5 minutes (300000ms) timeout
+            timeout = setTimeout(logoutUser, 300000); // 5 minutes (300000ms) timeout
         }
 
         function logoutUser() {
@@ -110,7 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
 
     <div class="container mt-5">
         <h2 class="text-center">Account Management</h2>
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#signupModal">Create New Account</button>
+        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#signupModal">Create New
+            Account</button>
 
         <!-- User Table -->
         <table class="table table-bordered table-striped mt-4">
@@ -135,9 +136,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
                         echo "<td>" . htmlspecialchars($user['role']) . "</td>"; // Display role
                         echo "<td>" . htmlspecialchars($user['created_at']) . "</td>"; // Display created_at
                         echo "<td>
-                            <a href='../../controller/edit_account.php?id=" . $user['user_id'] . "' class='btn btn-warning btn-sm'>Edit</a>
-                            <a href='../../controller/delete_account.php?id=" . $user['user_id'] . "' class='btn btn-danger btn-sm' onclick='return confirm(\"Are you sure you want to delete this account?\")'>Delete</a>
-                          </td>";
+                        <button class='btn btn-warning btn-sm' onclick='openEditModal(" . $user['user_id'] . ")'>Edit</button>
+                        <a href='../../controller/delete_account.php?id=" . $user['user_id'] . "' class='btn btn-danger btn-sm' onclick='return confirm(\"Are you sure you want to delete this account?\")'>Delete</a>
+                            </td>";
+
                         echo "</tr>";
                     }
                 } else {
@@ -146,7 +148,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
                 ?>
             </tbody>
         </table>
+
+        <!-- Edit User Modal -->
+        <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editUserModalLabel">Edit Account</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editUserForm">
+                            <input type="hidden" id="edit_user_id">
+                            <div class="mb-3">
+                                <label for="edit_username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="edit_username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="edit_email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit_role" class="form-label">Role</label>
+                                <select class="form-control" id="edit_role" required>
+                                    <option value="admin">Admin</option>
+                                    <option value="user">User</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
+
+    <script>
+        function openEditModal(userId) {
+            // Fetch user data via AJAX
+            fetch(`../../controller/edit_account.php?id=${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        document.getElementById("edit_user_id").value = data.user_id;
+                        document.getElementById("edit_username").value = data.username;
+                        document.getElementById("edit_email").value = data.email;
+                        document.getElementById("edit_role").value = data.role;
+                        new bootstrap.Modal(document.getElementById("editUserModal")).show();
+                    }
+                })
+                .catch(error => console.error("Error fetching user data:", error));
+        }
+
+        // Handle form submission
+        document.getElementById("editUserForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            const userId = document.getElementById("edit_user_id").value;
+            const username = document.getElementById("edit_username").value;
+            const email = document.getElementById("edit_email").value;
+            const role = document.getElementById("edit_role").value;
+
+            fetch("../../controller/edit_account.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: userId, username: username, email: email, role: role })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.success);
+                        location.reload(); // Refresh the page to reflect changes
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => console.error("Error updating account:", error));
+        });
+    </script>
+
 </body>
 
 </html>
