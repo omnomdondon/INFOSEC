@@ -39,7 +39,7 @@ if (!$commentResult) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Account Management</title>
+    <title>Admin Dashboard</title>
     <link href="../../bootstrap/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
@@ -111,27 +111,20 @@ if (!$commentResult) {
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
                     }
-                    return response.text(); // Use text() instead of json() temporarily to inspect the raw response
+                    return response.json(); // Parse the response as JSON
                 })
                 .then(data => {
-                    console.log("Raw response:", data); // Log the raw response to check if it's HTML
-                    try {
-                        const jsonData = JSON.parse(data); // Try parsing it as JSON
-                        if (jsonData.error) {
-                            alert(jsonData.error);
-                        } else {
-                            // Populate the modal fields
-                            document.getElementById('editPostId').value = jsonData.post_id;
-                            document.getElementById('editTitle').value = jsonData.title;
-                            document.getElementById('editContent').value = jsonData.content;
+                    if (data.error) {
+                        alert(data.error); // Show error message if any
+                    } else {
+                        // Populate the modal fields
+                        document.getElementById('editPostId').value = data.post_id;
+                        document.getElementById('editTitle').value = data.title;
+                        document.getElementById('editContent').value = data.content;
 
-                            // Show the modal
-                            let modal = new bootstrap.Modal(document.getElementById('editPostModal'));
-                            modal.show();
-                        }
-                    } catch (error) {
-                        console.error('Error parsing JSON:', error);
-                        alert('Failed to fetch post data. Check the console for details.');
+                        // Show the modal
+                        let modal = new bootstrap.Modal(document.getElementById('editPostModal'));
+                        modal.show();
                     }
                 })
                 .catch(error => {
@@ -139,6 +132,31 @@ if (!$commentResult) {
                     alert('Failed to fetch post data. Check the console for details.');
                 });
         }
+
+        // Function to handle form submission for editing a post
+        document.getElementById('editPostForm').addEventListener('submit', function (e) {
+            e.preventDefault(); // Prevent default form submission
+
+            const formData = new FormData(this);
+
+            fetch('../../controller/edit_post.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.success); // Show success message
+                        window.location.reload(); // Reload the page to reflect changes
+                    } else if (data.error) {
+                        alert(data.error); // Show error message
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating post:', error);
+                    alert('Failed to update post. Check the console for details.');
+                });
+        });
     </script>
 </head>
 
@@ -147,7 +165,8 @@ if (!$commentResult) {
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="admin_dashboard.php">Admin Dashboard</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -180,13 +199,16 @@ if (!$commentResult) {
         <!-- Tab Navigation -->
         <ul class="nav nav-tabs" id="adminTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <a class="nav-link active" id="users-tab" data-bs-toggle="tab" href="#users" role="tab" aria-controls="users" aria-selected="true">Users</a>
+                <a class="nav-link active" id="users-tab" data-bs-toggle="tab" href="#users" role="tab"
+                    aria-controls="users" aria-selected="true">Users</a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" id="posts-tab" data-bs-toggle="tab" href="#posts" role="tab" aria-controls="posts" aria-selected="false">Posts</a>
+                <a class="nav-link" id="posts-tab" data-bs-toggle="tab" href="#posts" role="tab" aria-controls="posts"
+                    aria-selected="false">Posts</a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" id="comments-tab" data-bs-toggle="tab" href="#comments" role="tab" aria-controls="comments" aria-selected="false">Comments</a>
+                <a class="nav-link" id="comments-tab" data-bs-toggle="tab" href="#comments" role="tab"
+                    aria-controls="comments" aria-selected="false">Comments</a>
             </li>
         </ul>
 
@@ -303,7 +325,7 @@ if (!$commentResult) {
 
                 if ($newsFeedResult->num_rows > 0):
                     while ($row = $newsFeedResult->fetch_assoc()):
-                ?>
+                        ?>
                         <div class="post-card">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="post-title"><?php echo htmlspecialchars($row['title']); ?></div>
@@ -311,12 +333,15 @@ if (!$commentResult) {
                                 <!-- Edit and Delete Buttons -->
                                 <div>
                                     <!-- Edit Button -->
-                                    <button class="btn btn-light btn-sm" onclick="fetchPostData(<?php echo $row['post_id']; ?>)">
+                                    <button class="btn btn-light btn-sm"
+                                        onclick="fetchPostData(<?php echo $row['post_id']; ?>)">
                                         <i class="fas fa-pencil-alt"></i> <!-- Pencil icon -->
                                     </button>
 
                                     <!-- Delete Button -->
-                                    <form action="../../controller/delete_post.php" method="POST" onsubmit="return confirm('Are you sure you want to delete this post?');" style="display: inline;">
+                                    <form action="../../controller/delete_post.php" method="POST"
+                                        onsubmit="return confirm('Are you sure you want to delete this post?');"
+                                        style="display: inline;">
                                         <input type="hidden" name="post_id" value="<?php echo $row['post_id']; ?>">
                                         <button type="submit" class="btn btn-light btn-sm text-danger">
                                             <i class="fas fa-trash-alt"></i> <!-- Trash bin icon -->
@@ -333,26 +358,34 @@ if (!$commentResult) {
                             </div>
 
                             <!-- Comment Button -->
-                            <button type="button" class="btn btn-primary mt-2 bg-success" data-bs-toggle="modal" data-bs-target="#commentModal-<?php echo $row['post_id']; ?>">
+                            <button type="button" class="btn btn-primary mt-2 bg-success" data-bs-toggle="modal"
+                                data-bs-target="#commentModal-<?php echo $row['post_id']; ?>">
                                 Add Comment
                             </button>
 
                             <!-- Comment Modal -->
-                            <div class="modal fade" id="commentModal-<?php echo $row['post_id']; ?>" tabindex="-1" aria-labelledby="commentModalLabel-<?php echo $row['post_id']; ?>" aria-hidden="true">
+                            <div class="modal fade" id="commentModal-<?php echo $row['post_id']; ?>" tabindex="-1"
+                                aria-labelledby="commentModalLabel-<?php echo $row['post_id']; ?>" aria-hidden="true">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title" id="commentModalLabel-<?php echo $row['post_id']; ?>">Add Comment</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            <h5 class="modal-title" id="commentModalLabel-<?php echo $row['post_id']; ?>">Add
+                                                Comment</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
                                             <form action="../../controller/add_comment.php" method="POST">
                                                 <div class="mb-3">
-                                                    <label for="commentText-<?php echo $row['post_id']; ?>" class="form-label">Comment</label>
-                                                    <textarea class="form-control" id="commentText-<?php echo $row['post_id']; ?>" name="comment" required></textarea>
+                                                    <label for="commentText-<?php echo $row['post_id']; ?>"
+                                                        class="form-label">Comment</label>
+                                                    <textarea class="form-control"
+                                                        id="commentText-<?php echo $row['post_id']; ?>" name="comment"
+                                                        required></textarea>
                                                 </div>
                                                 <input type="hidden" name="post_id" value="<?php echo $row['post_id']; ?>" />
-                                                <input type="hidden" name="user_id" value="<?php echo $_SESSION['user_id']; ?>" />
+                                                <input type="hidden" name="user_id"
+                                                    value="<?php echo $_SESSION['user_id']; ?>" />
                                                 <button type="submit" class="btn btn-success">Submit</button>
                                             </form>
                                         </div>
@@ -382,7 +415,7 @@ if (!$commentResult) {
                                                 Commented on <?php echo date("F j, Y, g:i A", strtotime($comment['created_at'])); ?>
                                             </div>
                                         </div>
-                                <?php endwhile;
+                                    <?php endwhile;
                                 endif; ?>
                             </div>
                         </div>
@@ -394,7 +427,8 @@ if (!$commentResult) {
         </div>
 
         <!-- Edit Post Modal -->
-        <div class="modal fade" id="editPostModal" tabindex="-1" aria-labelledby="editPostModalLabel" aria-hidden="true">
+        <div class="modal fade" id="editPostModal" tabindex="-1" aria-labelledby="editPostModalLabel"
+            aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -402,7 +436,7 @@ if (!$commentResult) {
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="../../controller/edit_post.php" method="POST">
+                        <form id="editPostForm" method="POST">
                             <input type="hidden" id="editPostId" name="post_id">
                             <div class="mb-3">
                                 <label for="editTitle" class="form-label">Title</label>
@@ -410,7 +444,8 @@ if (!$commentResult) {
                             </div>
                             <div class="mb-3">
                                 <label for="editContent" class="form-label">Content</label>
-                                <textarea class="form-control" id="editContent" name="content" rows="5" required></textarea>
+                                <textarea class="form-control" id="editContent" name="content" rows="5"
+                                    required></textarea>
                             </div>
                             <button type="submit" class="btn btn-primary">Save changes</button>
                         </form>
