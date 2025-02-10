@@ -80,6 +80,10 @@ if (!$commentResult) {
         .comment-author {
             font-weight: bold;
         }
+
+        .comment-meta {
+            color: #adb5bd;
+        }
     </style>
 
     <script>
