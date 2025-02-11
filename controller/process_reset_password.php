@@ -84,3 +84,4 @@ $stmt->execute();
 $_SESSION['success_message'] = "Password updated successfully. You can now log in.";
 header("Location: ../index.php"); // Redirect to the login page
 exit;
+?>
