@@ -1,11 +1,22 @@
 <?php
 session_start();
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
+
 if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
-    header('Location: ../index.php');
+    http_response_code(403);
+    echo json_encode(['error' => 'Unauthorized access.']);
     exit;
 }
 
-include '../../model/connect.php';
+include '../model/connect.php';
+
+// Check database connection
+if (!$CONN) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Database connection failed.']);
+    exit;
+}
 
 // Handle POST request to update a post
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
@@ -15,11 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
 
     // Validate input
     if (empty($title) || empty($content)) {
+        http_response_code(400);
         echo json_encode(['error' => 'Title and content cannot be empty.']);
         exit;
     }
 
     if (strlen($title) > 255) {
+        http_response_code(400);
         echo json_encode(['error' => 'Title is too long.']);
         exit;
     }
@@ -30,12 +43,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
 
     if ($updateStmt->execute()) {
         if ($updateStmt->affected_rows > 0) {
+            http_response_code(200);
             echo json_encode(['success' => 'Post updated successfully.']);
         } else {
+            http_response_code(304);
             echo json_encode(['message' => 'No changes made.']);
         }
     } else {
         error_log("Error updating post: " . $CONN->error);
+        http_response_code(500);
         echo json_encode(['error' => 'Failed to update post.']);
     }
     $updateStmt->close();
@@ -43,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
 }
 
 // Handle GET request to fetch post data for editing
-if (isset($_GET['id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
     $postId = intval($_GET['id']);
 
     $postQuery = "SELECT post_id, title, content FROM posts WHERE post_id = ?";
@@ -54,6 +70,7 @@ if (isset($_GET['id'])) {
 
     if ($result->num_rows > 0) {
         $post = $result->fetch_assoc();
+        http_response_code(200);
         echo json_encode($post); // Return post data as JSON
     } else {
         http_response_code(404);

@@ -111,55 +111,49 @@ if (!$commentResult) {
         // Function to fetch post data and populate the edit modal
         function fetchPostData(postId) {
             fetch(`../../controller/edit_post.php?id=${postId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json(); // Parse the response as JSON
-                })
+                .then(response => response.json())
                 .then(data => {
                     if (data.error) {
-                        alert(data.error); // Show error message if any
+                        alert(data.error);
                     } else {
-                        // Populate the modal fields
                         document.getElementById('editPostId').value = data.post_id;
                         document.getElementById('editTitle').value = data.title;
                         document.getElementById('editContent').value = data.content;
 
-                        // Show the modal
                         let modal = new bootstrap.Modal(document.getElementById('editPostModal'));
                         modal.show();
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching post data:', error);
-                    alert('Failed to fetch post data. Check the console for details.');
+                    alert('Failed to fetch post data.');
                 });
         }
 
-        // Function to handle form submission for editing a post
-        document.getElementById('editPostForm').addEventListener('submit', function (e) {
-            e.preventDefault(); // Prevent default form submission
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('editPostForm').addEventListener('submit', function (e) {
+                e.preventDefault();
 
-            const formData = new FormData(this);
+                const formData = new FormData(this);
 
-            fetch('../../controller/edit_post.php', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.success); // Show success message
-                        window.location.reload(); // Reload the page to reflect changes
-                    } else if (data.error) {
-                        alert(data.error); // Show error message
-                    }
+                fetch('../../controller/edit_post.php', {
+                    method: 'POST',
+                    body: formData
                 })
-                .catch(error => {
-                    console.error('Error updating post:', error);
-                    alert('Failed to update post. Check the console for details.');
-                });
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.success);
+                            window.location.reload();
+                        } else if (data.error) {
+                            alert(data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating post:', error);
+                        alert('Failed to update post.');
+                    });
+            });
         });
     </script>
 </head>
@@ -440,18 +434,18 @@ if (!$commentResult) {
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form id="editPostForm" method="POST">
-                            <input type="hidden" id="editPostId" name="post_id">
+                        <form id="editPostForm">
+                            <input type="hidden" name="post_id" id="editPostId">
                             <div class="mb-3">
                                 <label for="editTitle" class="form-label">Title</label>
                                 <input type="text" class="form-control" id="editTitle" name="title" required>
                             </div>
                             <div class="mb-3">
                                 <label for="editContent" class="form-label">Content</label>
-                                <textarea class="form-control" id="editContent" name="content" rows="5"
+                                <textarea class="form-control" id="editContent" name="content" rows="3"
                                     required></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary">Save changes</button>
+                            <button type="submit" class="btn btn-success">Save Changes</button>
                         </form>
                     </div>
                 </div>

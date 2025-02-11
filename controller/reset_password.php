@@ -1,5 +1,5 @@
 <?php
-
+session_start(); // Start the session to use session variables
 $token = $_GET["token"];
 $token_hash = hash("sha256", $token);
 
@@ -15,11 +15,15 @@ $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
 if ($user === null) {
-    die("Token not found or invalid.");
+    $_SESSION['error_message'] = "Token not found or invalid.";
+    header("Location: ../index.php"); // Redirect to the homepage or login page
+    exit;
 }
 
 if (strtotime($user["reset_token_expires_at"]) <= time()) {
-    die("Token has expired.");
+    $_SESSION['error_message'] = "Token has expired.";
+    header("Location: ../index.php"); // Redirect to the homepage or login page
+    exit;
 }
 ?>
 
@@ -90,10 +94,45 @@ if (strtotime($user["reset_token_expires_at"]) <= time()) {
                 icon.classList.add("fa-eye");
             }
         }
+
+        // Show modal with messages
+        document.addEventListener('DOMContentLoaded', function () {
+            const errorMessage = "<?php echo $_SESSION['error_message'] ?? ''; ?>";
+            const successMessage = "<?php echo $_SESSION['success_message'] ?? ''; ?>";
+
+            if (errorMessage) {
+                document.getElementById('modalMessage').textContent = errorMessage;
+                document.getElementById('messageModal').classList.add('show');
+                document.getElementById('messageModal').style.display = 'block';
+            }
+
+            if (successMessage) {
+                document.getElementById('modalMessage').textContent = successMessage;
+                document.getElementById('messageModal').classList.add('show');
+                document.getElementById('messageModal').style.display = 'block';
+            }
+        });
     </script>
 </head>
 
 <body class="bg-light">
+    <!-- Modal for displaying messages -->
+    <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="messageModalLabel">Message</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="modalMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <div class="row mt-5">
