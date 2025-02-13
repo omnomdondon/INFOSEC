@@ -130,6 +130,40 @@ if (!$commentResult) {
                 });
         }
 
+        function submitReply(commentId) {
+            const replyContent = document.getElementById(`replyContent-${commentId}`).value;
+
+            fetch('../../controller/add_reply.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `comment_id=${commentId}&user_id=<?php echo $_SESSION['user_id']; ?>&reply_content=${encodeURIComponent(replyContent)}`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success modal
+                        document.getElementById('successMessage').textContent = data.success;
+                        let successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                        successModal.show();
+                    } else {
+                        // Show error modal
+                        document.getElementById('errorMessage').textContent = data.error;
+                        let errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                        errorModal.show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Show generic error modal
+                    document.getElementById('errorMessage').textContent = 'Failed to submit reply.';
+                    let errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    errorModal.show();
+                });
+        }
+
+
         document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('editPostForm').addEventListener('submit', function (e) {
                 e.preventDefault();
@@ -221,12 +255,11 @@ if (!$commentResult) {
                             <th scope="col">Username</th>
                             <th scope="col">Email</th>
                             <th scope="col">Role</th>
-                            <th scope="col">Created At</th> <!-- New Column -->
+                            <th scope="col">Created At</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php
-                        // Display users from the database
                         if ($userResult->num_rows > 0) {
                             while ($row = $userResult->fetch_assoc()) {
                                 echo "<tr>
@@ -234,7 +267,7 @@ if (!$commentResult) {
                                     <td>" . htmlspecialchars($row['username']) . "</td>
                                     <td>" . htmlspecialchars($row['email']) . "</td>
                                     <td>" . htmlspecialchars($row['role']) . "</td>
-                                    <td>" . htmlspecialchars($row['created_at']) . "</td> <!-- Display Created At -->
+                                    <td>" . htmlspecialchars($row['created_at']) . "</td>
                                 </tr>";
                             }
                         } else {
@@ -259,7 +292,6 @@ if (!$commentResult) {
                     </thead>
                     <tbody>
                         <?php
-                        // Display posts from the database
                         if ($postResult->num_rows > 0) {
                             while ($row = $postResult->fetch_assoc()) {
                                 echo "<tr>
@@ -292,7 +324,6 @@ if (!$commentResult) {
                     </thead>
                     <tbody>
                         <?php
-                        // Display comments from the database
                         if ($commentResult->num_rows > 0) {
                             while ($row = $commentResult->fetch_assoc()) {
                                 echo "<tr>
@@ -317,7 +348,6 @@ if (!$commentResult) {
             <h2>News Feed</h2>
             <div class="posts mt-4">
                 <?php
-                // Query to fetch posts for the news feed
                 $newsFeedQuery = "SELECT post_id, title, content, created_at FROM posts ORDER BY created_at DESC";
                 $newsFeedResult = $CONN->query($newsFeedQuery);
 
@@ -327,35 +357,23 @@ if (!$commentResult) {
                         <div class="post-card">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="post-title"><?php echo htmlspecialchars($row['title']); ?></div>
-
-                                <!-- Edit and Delete Buttons -->
                                 <div>
-                                    <!-- Edit Button -->
                                     <button class="btn btn-light btn-sm"
                                         onclick="fetchPostData(<?php echo $row['post_id']; ?>)">
-                                        <i class="fas fa-pencil-alt"></i> <!-- Pencil icon -->
+                                        <i class="fas fa-pencil-alt"></i>
                                     </button>
-
-                                    <!-- Delete Button -->
-                                    <form action="../../controller/delete_post.php" method="POST"
-                                        onsubmit="return confirm('Are you sure you want to delete this post?');"
-                                        style="display: inline;">
-                                        <input type="hidden" name="post_id" value="<?php echo $row['post_id']; ?>">
-                                        <button type="submit" class="btn btn-light btn-sm text-danger">
-                                            <i class="fas fa-trash-alt"></i> <!-- Trash bin icon -->
-                                        </button>
-                                    </form>
+                                    <button class="btn btn-light btn-sm text-danger"
+                                        onclick="deletePost(<?php echo $row['post_id']; ?>)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
                                 </div>
                             </div>
-
                             <div class="post-body">
                                 <?php echo nl2br(htmlspecialchars($row['content'])); ?>
                             </div>
                             <div class="post-meta">
                                 Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
                             </div>
-
-                            <!-- Comment Button -->
                             <button type="button" class="btn btn-primary mt-2 bg-success" data-bs-toggle="modal"
                                 data-bs-target="#commentModal-<?php echo $row['post_id']; ?>">
                                 Add Comment
@@ -394,28 +412,105 @@ if (!$commentResult) {
                             <!-- Comments Section -->
                             <div class="comments mt-3">
                                 <?php
-                                // Query to fetch comments for the current post
-                                $commentQuery = "SELECT c.comment, u.username AS author, c.created_at 
-                        FROM comments c 
-                        JOIN users u ON c.user_id = u.user_id 
-                        WHERE c.post_id = ? 
-                        ORDER BY c.created_at ASC";
+                                $commentQuery = "SELECT c.id, c.comment, u.username AS author, c.created_at 
+                     FROM comments c 
+                     JOIN users u ON c.user_id = u.user_id 
+                     WHERE c.post_id = ? 
+                     ORDER BY c.created_at ASC";
+
                                 $stmt = $CONN->prepare($commentQuery);
                                 $stmt->bind_param('i', $row['post_id']);
                                 $stmt->execute();
                                 $commentsResult = $stmt->get_result();
+
                                 if ($commentsResult->num_rows > 0):
                                     while ($comment = $commentsResult->fetch_assoc()): ?>
                                         <div class="comment">
-                                            <div class="comment-author"><?php echo htmlspecialchars($comment['author']); ?>:</div>
-                                            <div class="comment-text"><?php echo nl2br(htmlspecialchars($comment['comment'])); ?></div>
+                                            <div class="comment-author">
+                                                <?php echo htmlspecialchars($comment['author']); ?>:
+                                            </div>
+                                            <div class="comment-text">
+                                                <?php echo nl2br(htmlspecialchars($comment['comment'])); ?>
+                                            </div>
                                             <div class="comment-meta">
                                                 Commented on <?php echo date("F j, Y, g:i A", strtotime($comment['created_at'])); ?>
                                             </div>
+
+                                            <!-- Reply Button -->
+                                            <button type="button" class="btn btn-sm btn-secondary mt-2" data-bs-toggle="modal"
+                                                data-bs-target="#replyModal-<?php echo $comment['id']; ?>">
+                                                Reply
+                                            </button>
+
+                                            <!-- Reply Modal -->
+                                            <div class="modal fade" id="replyModal-<?php echo $comment['id']; ?>" tabindex="-1"
+                                                aria-labelledby="replyModalLabel-<?php echo $comment['id']; ?>" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="replyModalLabel-<?php echo $comment['id']; ?>">
+                                                                Reply to Comment
+                                                            </h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                                aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <form action="../../controller/add_reply.php" method="POST">
+                                                                <input type="hidden" name="comment_id"
+                                                                    value="<?php echo $comment['id']; ?>">
+                                                                <input type="hidden" name="user_id"
+                                                                    value="<?php echo $_SESSION['user_id']; ?>"> <!-- Added user_id -->
+                                                                <div class="mb-3">
+                                                                    <label for="replyContent-<?php echo $comment['id']; ?>"
+                                                                        class="form-label">Reply</label>
+                                                                    <textarea class="form-control"
+                                                                        id="replyContent-<?php echo $comment['id']; ?>"
+                                                                        name="reply_content" required></textarea>
+                                                                </div>
+                                                                <button type="submit" class="btn btn-success">Submit</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Replies Section -->
+                                            <div class="replies mt-2 ms-4">
+                                                <?php
+                                                $replyQuery = "SELECT r.reply_content, u.username AS replier, r.created_at 
+                                   FROM comment_replies r 
+                                   JOIN users u ON r.user_id = u.user_id 
+                                   WHERE r.comment_id = ? 
+                                   ORDER BY r.created_at ASC";
+
+                                                $replyStmt = $CONN->prepare($replyQuery);
+                                                $replyStmt->bind_param('i', $comment['id']);
+                                                $replyStmt->execute();
+                                                $replyResult = $replyStmt->get_result();
+
+                                                if ($replyResult->num_rows > 0):
+                                                    while ($reply = $replyResult->fetch_assoc()): ?>
+                                                        <div class="reply">
+                                                            <div class="reply-author">
+                                                                <?php echo htmlspecialchars($reply['replier']); ?>:
+                                                            </div>
+                                                            <div class="reply-text">
+                                                                <?php echo nl2br(htmlspecialchars($reply['reply_content'])); ?>
+                                                            </div>
+                                                            <div class="reply-meta">
+                                                                Replied on <?php echo date("F j, Y, g:i A", strtotime($reply['created_at'])); ?>
+                                                            </div>
+                                                        </div>
+                                                    <?php endwhile;
+                                                endif; ?>
+                                            </div>
                                         </div>
                                     <?php endwhile;
-                                endif; ?>
+                                endif;
+                                ?>
                             </div>
+
+
                         </div>
                     <?php endwhile; ?>
                 <?php else: ?>
@@ -451,6 +546,37 @@ if (!$commentResult) {
                 </div>
             </div>
         </div>
+
+        <!-- Success Modal -->
+        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="successModalLabel">Success</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="successMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="errorModalLabel">Error</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="errorMessage"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <!-- Include Bootstrap JS -->
         <script src="../../bootstrap/bootstrap-5.0.2-dist/js/bootstrap.bundle.min.js"></script>
