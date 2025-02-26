@@ -13,7 +13,7 @@ if (!isset($_SESSION['email']) || !isset($_SESSION['username'])) {
 }
 
 // Retrieve the logged-in user's ID and name from the session
-$user_id = $_SESSION['email'];
+$user_id = $_SESSION['user_id']; // Ensure this is the correct session variable for user ID
 $username = $_SESSION['username'];
 
 // Query to fetch posts
@@ -80,6 +80,16 @@ if (!$result) {
         .comment-author {
             font-weight: bold;
         }
+
+        .replies {
+            margin-top: 10px;
+            padding-left: 20px;
+            border-left: 2px solid #6c757d;
+        }
+
+        .reply-author {
+            font-weight: bold;
+        }
     </style>
 
     <script>
@@ -103,6 +113,38 @@ if (!$result) {
         document.addEventListener("touchstart", startTimer); // Detects mobile touch
 
         startTimer(); // Initialize timer on page load
+
+        // Function to submit a reply
+        function submitReply(commentId) {
+            const replyContent = document.getElementById(`replyContent-${commentId}`).value;
+            const comment_id = commentId;
+            const user_id = <?php echo json_encode($user_id); ?>;
+
+            fetch('../../controller/add_reply.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `comment_id=${comment_id}&user_id=${user_id}&reply_content=${encodeURIComponent(replyContent)}`
+            })
+            .then(response => response.text()) // First, get the raw response as text
+            .then(text => {
+                console.log("Raw response:", text); // Log the raw response
+                return JSON.parse(text); // Then try to parse it as JSON
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(data.success);
+                    window.location.reload(); // Reload the page to show the new reply
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to submit reply.');
+            });
+        }
     </script>
 </head>
 
@@ -182,7 +224,7 @@ if (!$result) {
                         <div class="comments mt-3">
                             <?php
                             // Query to fetch comments for the current post
-                            $commentQuery = "SELECT comment, author, created_at FROM comments WHERE post_id = ? ORDER BY created_at ASC";
+                            $commentQuery = "SELECT id, comment, author, created_at FROM comments WHERE post_id = ? ORDER BY created_at ASC";
                             $stmt = $CONN->prepare($commentQuery);
                             $stmt->bind_param('i', $row['post_id']);
                             $stmt->execute();
@@ -196,15 +238,77 @@ if (!$result) {
                                         <div class="comment-meta">
                                             Commented on <?php echo date("F j, Y, g:i A", strtotime($comment['created_at'])); ?>
                                         </div>
+
+                                        <!-- Reply Button -->
+                                        <button type="button" class="btn btn-sm btn-secondary mt-2" data-bs-toggle="modal"
+                                            data-bs-target="#replyModal-<?php echo $comment['id']; ?>">
+                                            Reply
+                                        </button>
+
+                                        <!-- Reply Modal -->
+                                        <div class="modal fade" id="replyModal-<?php echo $comment['id']; ?>" tabindex="-1"
+                                            aria-labelledby="replyModalLabel-<?php echo $comment['id']; ?>" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="replyModalLabel-<?php echo $comment['id']; ?>">
+                                                            Reply to Comment
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <form id="replyForm-<?php echo $comment['id']; ?>">
+                                                            <input type="hidden" name="comment_id" value="<?php echo $comment['id']; ?>">
+                                                            <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
+                                                            <div class="mb-3">
+                                                                <label for="replyContent-<?php echo $comment['id']; ?>"
+                                                                    class="form-label">Reply</label>
+                                                                <textarea class="form-control"
+                                                                    id="replyContent-<?php echo $comment['id']; ?>"
+                                                                    name="reply_content" required></textarea>
+                                                            </div>
+                                                            <button type="button" class="btn btn-success" onclick="submitReply(<?php echo $comment['id']; ?>)">Submit</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Replies Section -->
+                                        <div class="replies mt-2 ms-4">
+                                            <?php
+                                            // Query to fetch replies for the current comment, joining with the users table to get the username
+                                            $replyQuery = "SELECT r.reply_content, u.username AS author, r.created_at 
+                                                           FROM comment_replies r 
+                                                           JOIN users u ON r.user_id = u.user_id 
+                                                           WHERE r.comment_id = ? 
+                                                           ORDER BY r.created_at ASC";
+                                            $replyStmt = $CONN->prepare($replyQuery);
+                                            $replyStmt->bind_param('i', $comment['id']);
+                                            $replyStmt->execute();
+                                            $replyResult = $replyStmt->get_result();
+
+                                            if ($replyResult->num_rows > 0):
+                                                while ($reply = $replyResult->fetch_assoc()): ?>
+                                                    <div class="reply">
+                                                        <div class="reply-author"><?php echo htmlspecialchars($reply['author']); ?>:</div>
+                                                        <div class="reply-text"><?php echo nl2br(htmlspecialchars($reply['reply_content'])); ?></div>
+                                                        <div class="reply-meta">
+                                                            Replied on <?php echo date("F j, Y, g:i A", strtotime($reply['created_at'])); ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endwhile;
+                                            endif; ?>
+                                        </div>
                                     </div>
-                            <?php endwhile;
+                                <?php endwhile;
                             endif; ?>
                         </div>
-
                     </div>
 
                     <!-- Comment Modal -->
-                    <div class="modal fade" id="commentModal<?php echo $row['post_id']; ?>" tabindex="-1" aria-labelledby="commentModalLabel<?php echo $row['id']; ?>"
+                    <div class="modal fade" id="commentModal<?php echo $row['post_id']; ?>" tabindex="-1" aria-labelledby="commentModalLabel<?php echo $row['post_id']; ?>"
                         aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content">
@@ -234,19 +338,8 @@ if (!$result) {
         </div>
     </div>
 
-
     <!-- Include Bootstrap JS -->
     <script src="../../bootstrap/bootstrap-5.0.2-dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        // Close the modal after submitting a comment
-        const params = new URLSearchParams(window.location.search);
-        if (params.has('closeModal')) {
-            const modalId = params.get('closeModal');
-            const modal = new bootstrap.Modal(document.getElementById(modalId));
-            modal.hide();
-        }
-    </script>
 </body>
 
 </html>
