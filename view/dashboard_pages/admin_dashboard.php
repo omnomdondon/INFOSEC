@@ -485,7 +485,7 @@ if (!$commentResult) {
                                             </div>
 
                                             <!-- Reply Button -->
-                                            <button type="button" class="btn btn-sm btn-secondary mt-2" data-bs-toggle="modal"
+                                            <button type="button" class="btn btn-sm btn-success mt-2" data-bs-toggle="modal"
                                                 data-bs-target="#replyModal-<?php echo $comment['id']; ?>">
                                                 Reply
                                             </button>
