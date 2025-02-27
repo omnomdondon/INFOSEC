@@ -1,11 +1,14 @@
 <?php
 session_start();
-if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
-    header('Location: ../index.php');
+
+// Check if the user is logged in
+if (!isset($_SESSION['username'])) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Unauthorized access.']);
     exit;
 }
 
-include '../model/connect.php'; // Assuming the DB connection file is here
+include '../model/connect.php'; // Include the database connection
 
 function deletePost($postId, $conn) {
     // Prepare query to delete the post
@@ -25,13 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['post_id'])) {
 
     // Call the delete function
     if (deletePost($postId, $CONN)) {
-        header('Location: ../view/dashboard_pages/admin_dashboard.php?success=Post deleted successfully');
+        echo json_encode(['success' => 'Post deleted successfully.']);
     } else {
-        header('Location: ../view/dashboard_pages/admin_dashboard.php?error=Error deleting post');
+        echo json_encode(['error' => 'Error deleting post.']);
     }
     exit;
 } else {
-    header('Location: ../view/dashboard_pages/admin_dashboard.php?error=Invalid request');
+    echo json_encode(['error' => 'Invalid request.']);
     exit;
 }
 ?>

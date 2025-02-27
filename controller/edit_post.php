@@ -3,7 +3,13 @@ session_start();
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
+// if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
+//     http_response_code(403);
+//     echo json_encode(['error' => 'Unauthorized access.']);
+//     exit;
+// }
+
+if (!isset($_SESSION['username'])) {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized access.']);
     exit;

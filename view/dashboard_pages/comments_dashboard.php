@@ -23,6 +23,7 @@ if ($result === false) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,6 +43,24 @@ if ($result === false) {
             window.location.href = "../../controller/dashboard_logout.php";
         }
 
+        // Logout Confirmation Modal Handling
+        document.addEventListener("DOMContentLoaded", function () {
+            const logoutModal = document.getElementById('logoutConfirmationModal');
+            const logoutLink = document.querySelector('a[data-bs-target="#logoutConfirmationModal"]');
+
+            logoutLink.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent default link behavior
+                const modal = new bootstrap.Modal(logoutModal);
+                modal.show();
+            });
+
+            // Handle the logout button click inside the modal
+            const logoutButton = document.querySelector('#logoutConfirmationModal .btn-danger');
+            logoutButton.addEventListener('click', function () {
+                window.location.href = '../../controller/dashboard_logout.php'; // Redirect to logout page
+            });
+        });
+
         // Reset timer on user activity
         document.addEventListener("mousemove", startTimer);
         document.addEventListener("keydown", startTimer);
@@ -52,11 +71,13 @@ if ($result === false) {
         startTimer(); // Initialize timer on page load
     </script>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="admin_dashboard.php">Admin Dashboard</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -68,7 +89,8 @@ if ($result === false) {
                         <a class="nav-link" href="post_dashboard.php">Post Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../../controller/dashboard_logout.php">Logout</a>
+                        <a class="nav-link" href="#" data-bs-toggle="modal"
+                            data-bs-target="#logoutConfirmationModal">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -103,6 +125,27 @@ if ($result === false) {
         <?php endif; ?>
     </div>
 
+    <!-- Logout Confirmation Modal -->
+    <div class="modal fade" id="logoutConfirmationModal" tabindex="-1" aria-labelledby="logoutConfirmationModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to log out?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="../../controller/dashboard_logout.php" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

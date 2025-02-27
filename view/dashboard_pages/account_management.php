@@ -36,6 +36,24 @@ $result = $CONN->query($query);
             window.location.href = "../../controller/dashboard_logout.php";
         }
 
+        // Logout Confirmation Modal Handling
+        document.addEventListener("DOMContentLoaded", function () {
+            const logoutModal = document.getElementById('logoutConfirmationModal');
+            const logoutLink = document.querySelector('a[data-bs-target="#logoutConfirmationModal"]');
+
+            logoutLink.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent default link behavior
+                const modal = new bootstrap.Modal(logoutModal);
+                modal.show();
+            });
+
+            // Handle the logout button click inside the modal
+            const logoutButton = document.querySelector('#logoutConfirmationModal .btn-danger');
+            logoutButton.addEventListener('click', function () {
+                window.location.href = '../../controller/dashboard_logout.php'; // Redirect to logout page
+            });
+        });
+
         // Reset timer on user activity
         document.addEventListener("mousemove", startTimer);
         document.addEventListener("keydown", startTimer);
@@ -71,7 +89,8 @@ $result = $CONN->query($query);
                         <a class="nav-link" href="account_management.php">Account Management</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../../controller/dashboard_logout.php">Logout</a>
+                        <a class="nav-link" href="#" data-bs-toggle="modal"
+                            data-bs-target="#logoutConfirmationModal">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -228,6 +247,26 @@ $result = $CONN->query($query);
 
     </div>
 
+    <!-- Logout Confirmation Modal -->
+    <div class="modal fade" id="logoutConfirmationModal" tabindex="-1" aria-labelledby="logoutConfirmationModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to log out?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="../../controller/dashboard_logout.php" class="btn btn-danger">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const passwordInput = document.getElementById('password');
         const passwordStrengthText = document.getElementById('password-strength-text');
@@ -293,26 +332,6 @@ $result = $CONN->query($query);
                 })
                 .catch(error => console.error("Error fetching user data:", error));
         }
-
-        // // Toggle password visibility
-        // const togglePassword = document.getElementById('togglePassword');
-        // const passwordInput = document.getElementById('password');
-        // const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-        // const confirmPasswordInput = document.getElementById('confirm_password');
-
-        // togglePassword.addEventListener('click', function () {
-        //     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        //     passwordInput.setAttribute('type', type);
-        //     this.querySelector('i').classList.toggle('bi-eye');
-        //     this.querySelector('i').classList.toggle('bi-eye-slash');
-        // });
-
-        // toggleConfirmPassword.addEventListener('click', function () {
-        //     const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        //     confirmPasswordInput.setAttribute('type', type);
-        //     this.querySelector('i').classList.toggle('bi-eye');
-        //     this.querySelector('i').classList.toggle('bi-eye-slash');
-        // });
 
         // Handle form submission
         document.getElementById("editUserForm").addEventListener("submit", function (event) {

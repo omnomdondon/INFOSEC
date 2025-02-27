@@ -84,6 +84,14 @@ if (!$commentResult) {
         .comment-meta {
             color: #adb5bd;
         }
+
+        .reply-meta {
+            color: #adb5bd;
+        }
+
+        .reply-author {
+            font-weight: bold;
+        }
     </style>
 
     <script>
@@ -98,6 +106,24 @@ if (!$commentResult) {
             alert("Session expired due to inactivity. Redirecting to login page.");
             window.location.href = "../../controller/dashboard_logout.php";
         }
+
+        // Logout Confirmation Modal Handling
+        document.addEventListener("DOMContentLoaded", function () {
+            const logoutModal = document.getElementById('logoutConfirmationModal');
+            const logoutLink = document.querySelector('a[data-bs-target="#logoutConfirmationModal"]');
+
+            logoutLink.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent default link behavior
+                const modal = new bootstrap.Modal(logoutModal);
+                modal.show();
+            });
+
+            // Handle the logout button click inside the modal
+            const logoutButton = document.querySelector('#logoutConfirmationModal .btn-danger');
+            logoutButton.addEventListener('click', function () {
+                window.location.href = '../../controller/dashboard_logout.php'; // Redirect to logout page
+            });
+        });
 
         // Reset timer on user activity
         document.addEventListener("mousemove", startTimer);
@@ -143,26 +169,17 @@ if (!$commentResult) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Show success modal
-                        document.getElementById('successMessage').textContent = data.success;
-                        let successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                        successModal.show();
+                        alert(data.success); // Show success message as an alert
+                        window.location.reload(); // Reload the page to show the new reply
                     } else {
-                        // Show error modal
-                        document.getElementById('errorMessage').textContent = data.error;
-                        let errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                        errorModal.show();
+                        alert(data.error); // Show error message as an alert
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    // Show generic error modal
-                    document.getElementById('errorMessage').textContent = 'Failed to submit reply.';
-                    let errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                    errorModal.show();
+                    alert('Failed to submit reply.'); // Show generic error message as an alert
                 });
         }
-
 
         document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('editPostForm').addEventListener('submit', function (e) {
@@ -189,6 +206,36 @@ if (!$commentResult) {
                     });
             });
         });
+
+        function deletePost(postId) {
+            if (confirm("Are you sure you want to delete this post?")) {
+                fetch('../../controller/delete_post.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `post_id=${postId}`
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.success);
+                            window.location.reload(); // Reload the page to reflect changes
+                        } else {
+                            alert(data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to delete post.');
+                    });
+            }
+        }
     </script>
 </head>
 
@@ -216,7 +263,8 @@ if (!$commentResult) {
                         <a class="nav-link" href="account_management.php">Account Management</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="../../controller/dashboard_logout.php">Logout</a>
+                        <a class="nav-link" href="#" data-bs-toggle="modal"
+                            data-bs-target="#logoutConfirmationModal">Logout</a>
                     </li>
                 </ul>
             </div>
@@ -455,11 +503,11 @@ if (!$commentResult) {
                                                                 aria-label="Close"></button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <form action="../../controller/add_reply.php" method="POST">
+                                                            <form id="replyForm-<?php echo $comment['id']; ?>">
                                                                 <input type="hidden" name="comment_id"
                                                                     value="<?php echo $comment['id']; ?>">
                                                                 <input type="hidden" name="user_id"
-                                                                    value="<?php echo $_SESSION['user_id']; ?>"> <!-- Added user_id -->
+                                                                    value="<?php echo $_SESSION['user_id']; ?>">
                                                                 <div class="mb-3">
                                                                     <label for="replyContent-<?php echo $comment['id']; ?>"
                                                                         class="form-label">Reply</label>
@@ -467,7 +515,8 @@ if (!$commentResult) {
                                                                         id="replyContent-<?php echo $comment['id']; ?>"
                                                                         name="reply_content" required></textarea>
                                                                 </div>
-                                                                <button type="submit" class="btn btn-success">Submit</button>
+                                                                <button type="button" class="btn btn-success"
+                                                                    onclick="submitReply(<?php echo $comment['id']; ?>)">Submit</button>
                                                             </form>
                                                         </div>
                                                     </div>
@@ -547,36 +596,25 @@ if (!$commentResult) {
             </div>
         </div>
 
-        <!-- Success Modal -->
-        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+        <!-- Logout Confirmation Modal -->
+        <div class="modal fade" id="logoutConfirmationModal" tabindex="-1"
+            aria-labelledby="logoutConfirmationModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="successModalLabel">Success</h5>
+                        <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p id="successMessage"></p>
+                        Are you sure you want to log out?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <a href="../../controller/dashboard_logout.php" class="btn btn-danger">Logout</a>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- Error Modal -->
-        <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="errorModalLabel">Error</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p id="errorMessage"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
 
         <!-- Include Bootstrap JS -->
         <script src="../../bootstrap/bootstrap-5.0.2-dist/js/bootstrap.bundle.min.js"></script>
