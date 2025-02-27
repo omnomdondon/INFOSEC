@@ -83,6 +83,10 @@ if (!$result) {
             font-weight: bold;
         }
 
+        .comment-meta {
+            color: #adb5bd;
+        }
+
         .replies {
             margin-top: 10px;
             padding-left: 20px;
@@ -91,6 +95,10 @@ if (!$result) {
 
         .reply-author {
             font-weight: bold;
+        }
+
+        .reply-meta {
+            color: #adb5bd;
         }
 
         .post-actions {
@@ -342,7 +350,7 @@ if (!$result) {
                                         </div>
 
                                         <!-- Reply Button -->
-                                        <button type="button" class="btn btn-sm btn-secondary mt-2" data-bs-toggle="modal"
+                                        <button type="button" class="btn btn-sm btn-success mt-2" data-bs-toggle="modal"
                                             data-bs-target="#replyModal-<?php echo $comment['id']; ?>">
                                             Reply
                                         </button>
