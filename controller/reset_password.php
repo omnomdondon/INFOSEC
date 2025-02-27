@@ -21,10 +21,19 @@ if ($user === null) {
 }
 
 if (strtotime($user["reset_token_expires_at"]) <= time()) {
+    // Token has expired
     $_SESSION['error_message'] = "Token has expired.";
-    header("Location: ../index.php"); // Redirect to the homepage or login page
+    echo "<script>
+            alert('Token has expired. You will be redirected to the login page.');
+            window.location.href = '../index.php';
+          </script>";
     exit;
 }
+
+// Calculate the remaining time for the token
+$expiry_time = strtotime($user["reset_token_expires_at"]);
+$current_time = time();
+$remaining_time = $expiry_time - $current_time; // Remaining time in seconds
 ?>
 
 <!DOCTYPE html>
@@ -36,6 +45,37 @@ if (strtotime($user["reset_token_expires_at"]) <= time()) {
     <title>Reset Password</title>
     <link rel="stylesheet" href="../bootstrap/bootstrap-5.0.2-dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="../fontawesome-free-6.7.1-web/css/all.min.css">
+    <style>
+        /* Style for the countdown tracker */
+        #countdown-tracker {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1000;
+            display: block; /* Always visible */
+        }
+
+        #progress-bar {
+            width: 100%;
+            height: 5px;
+            background: #ddd;
+            margin-top: 5px;
+            border-radius: 2.5px;
+            overflow: hidden;
+        }
+
+        #progress {
+            height: 100%;
+            width: 100%;
+            background: #28a745;
+            transition: width 1s linear;
+        }
+    </style>
     <script src="../view/script.js"></script>
     <script>
         // Password strength validation function
@@ -112,6 +152,32 @@ if (strtotime($user["reset_token_expires_at"]) <= time()) {
                 document.getElementById('messageModal').style.display = 'block';
             }
         });
+
+        // Countdown timer for token expiry
+        let remainingTime = <?= $remaining_time ?>; // Remaining time in seconds
+        const expiryTime = new Date().getTime() + remainingTime * 1000; // Expiry time in milliseconds
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const timeLeft = expiryTime - now;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                alert('Token has expired. You will be redirected to the login page.');
+                window.location.href = '../index.php';
+                return;
+            }
+
+            const seconds = Math.floor(timeLeft / 1000);
+            document.getElementById('countdown').textContent = `Token will expire in ${seconds}s`;
+
+            // Update progress bar based on the full remaining time
+            const progress = (timeLeft / (remainingTime * 1000)) * 100;
+            document.getElementById('progress').style.width = `${progress}%`;
+        }
+
+        const countdownInterval = setInterval(updateCountdown, 1000);
+        updateCountdown(); // Initial call to avoid delay
     </script>
 </head>
 
@@ -131,6 +197,14 @@ if (strtotime($user["reset_token_expires_at"]) <= time()) {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Countdown Tracker -->
+    <div id="countdown-tracker">
+        <div id="countdown">Token will expire in <?= $remaining_time ?>s</div>
+        <div id="progress-bar">
+            <div id="progress"></div>
         </div>
     </div>
 

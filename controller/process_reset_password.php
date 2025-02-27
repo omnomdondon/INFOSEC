@@ -41,26 +41,20 @@ if ($reset_password !== $password_confirmation) {
 }
 
 // Check if the token exists in the database
-$sql = "SELECT user_id, reset_token_hash, reset_token_expires_at FROM users WHERE reset_token_hash IS NOT NULL";
+$token_hash = hash("sha256", $token);
+$sql = "SELECT user_id, reset_token_hash, reset_token_expires_at FROM users WHERE reset_token_hash = ?";
 $stmt = $mysqli->prepare($sql);
+$stmt->bind_param("s", $token_hash);
 $stmt->execute();
 $result = $stmt->get_result();
-
-$validUser = null;
-
-while ($user = $result->fetch_assoc()) {
-    // Compare the plain token to the hashed version in the database
-    if (hash("sha256", $token) === $user["reset_token_hash"]) {
-        $validUser = $user;
-        break;
-    }
-}
+$user = $result->fetch_assoc();
 
 // If no valid user or token, clear expired token
-if (!$validUser || strtotime($validUser["reset_token_expires_at"]) <= time()) {
+if (!$user || strtotime($user["reset_token_expires_at"]) <= time()) {
     // Clear expired or invalid token
-    $sql = "UPDATE users SET reset_token_hash = NULL, reset_token_expires_at = NULL WHERE reset_token_hash IS NOT NULL";
+    $sql = "UPDATE users SET reset_token_hash = NULL, reset_token_expires_at = NULL WHERE reset_token_hash = ?";
     $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $token_hash);
     $stmt->execute();
 
     $_SESSION['error_message'] = "Invalid or expired token.";
@@ -78,7 +72,7 @@ $sql = "UPDATE users
             reset_token_expires_at = NULL 
         WHERE user_id = ?";
 $stmt = $mysqli->prepare($sql);
-$stmt->bind_param("si", $password_hash, $validUser["user_id"]);
+$stmt->bind_param("si", $password_hash, $user["user_id"]);
 $stmt->execute();
 
 $_SESSION['success_message'] = "Password updated successfully. You can now log in.";
