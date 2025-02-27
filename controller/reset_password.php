@@ -5,6 +5,12 @@ $token_hash = hash("sha256", $token);
 
 $mysqli = require __DIR__ . "/../model/connect.php";
 
+// Check database connection
+if (!$mysqli) {
+    error_log("Database connection failed: " . $mysqli->connect_error);
+    die("Database connection failed.");
+}
+
 // Check if the token exists in the database
 $sql = "SELECT * FROM users WHERE reset_token_hash = ?";
 $stmt = $mysqli->prepare($sql);
@@ -20,8 +26,24 @@ if ($user === null) {
     exit;
 }
 
-if (strtotime($user["reset_token_expires_at"]) <= time()) {
-    // Token has expired
+$expiry_time = strtotime($user["reset_token_expires_at"]);
+$current_time = time();
+$remaining_time = $expiry_time - $current_time; // Remaining time in seconds
+
+if ($expiry_time <= time()) {
+    // Clear expired token
+    $sql = "UPDATE users SET reset_token_hash = NULL, reset_token_expires_at = NULL WHERE reset_token_hash = ?";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("s", $token_hash);
+    $stmt->execute();
+
+    // Debugging: Check if the query was successful
+    if ($stmt->affected_rows > 0) {
+        error_log("Token fields cleared for token hash: $token_hash");
+    } else {
+        error_log("No rows affected for token hash: $token_hash");
+    }
+
     $_SESSION['error_message'] = "Token has expired.";
     echo "<script>
             alert('Token has expired. You will be redirected to the login page.');
@@ -30,15 +52,12 @@ if (strtotime($user["reset_token_expires_at"]) <= time()) {
     exit;
 }
 
-// Calculate the remaining time for the token
-$expiry_time = strtotime($user["reset_token_expires_at"]);
-$current_time = time();
-$remaining_time = $expiry_time - $current_time; // Remaining time in seconds
+// Total token validity period (in seconds)
+$total_validity = 30; // Set this to match the expiry time in send_password_reset.php
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,111 +95,77 @@ $remaining_time = $expiry_time - $current_time; // Remaining time in seconds
             transition: width 1s linear;
         }
     </style>
-    <script src="../view/script.js"></script>
     <script>
-        // Password strength validation function
-        function checkPasswordStrength() {
-            const password = document.getElementById('reset_password').value;
-            const lengthRequirement = document.getElementById('lengthRequirement');
-            const uppercaseRequirement = document.getElementById('uppercaseRequirement');
-            const lowercaseRequirement = document.getElementById('lowercaseRequirement');
-            const numberRequirement = document.getElementById('numberRequirement');
-            const symbolRequirement = document.getElementById('symbolRequirement');
+        document.addEventListener("DOMContentLoaded", function () {
+            const passwordInput = document.getElementById('reset_password');
+            const confirmInput = document.getElementById('password_confirmation');
             const submitButton = document.getElementById('submitButton');
 
-            let isValid = true;
-
-            // Check password requirements
-            lengthRequirement.style.color = password.length >= 12 ? 'green' : 'red';
-            uppercaseRequirement.style.color = /[A-Z]/.test(password) ? 'green' : 'red';
-            lowercaseRequirement.style.color = /[a-z]/.test(password) ? 'green' : 'red';
-            numberRequirement.style.color = /[0-9]/.test(password) ? 'green' : 'red';
-            symbolRequirement.style.color = /[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'green' : 'red';
-
-            // Enable the signup button if all conditions are met
-            isValid = password.length >= 12 &&
-                /[A-Z]/.test(password) &&
-                /[a-z]/.test(password) &&
-                /[0-9]/.test(password) &&
-                /[!@#$%^&*(),.?":{}|<>]/.test(password);
-            submitButton.disabled = !isValid;
-        }
-
-        document.getElementById('reset_password').addEventListener('paste', function (e) {
-            e.preventDefault();  // Prevent paste
-            alert('Pasting is disabled in this field!');
-        });
-
-        document.getElementById('password_confirmation').addEventListener('paste', function (e) {
-            e.preventDefault();  // Prevent paste
-            alert('Pasting is disabled in this field!');
-        });
-
-        window.addEventListener('load', function () {
-            document.getElementById('reset_password').dispatchEvent(new Event('input'));
-        });
-
-        // Toggle password visibility
-        function toggleVisibility(inputId, iconId) {
-            const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
-            } else {
-                input.type = "password";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
-            }
-        }
-
-        // Show modal with messages
-        document.addEventListener('DOMContentLoaded', function () {
-            const errorMessage = "<?php echo $_SESSION['error_message'] ?? ''; ?>";
-            const successMessage = "<?php echo $_SESSION['success_message'] ?? ''; ?>";
-
-            if (errorMessage) {
-                document.getElementById('modalMessage').textContent = errorMessage;
-                document.getElementById('messageModal').classList.add('show');
-                document.getElementById('messageModal').style.display = 'block';
+            if (passwordInput && confirmInput) {
+                passwordInput.addEventListener('input', checkPasswordStrength);
+                confirmInput.addEventListener('input', checkPasswordStrength);
             }
 
-            if (successMessage) {
-                document.getElementById('modalMessage').textContent = successMessage;
-                document.getElementById('messageModal').classList.add('show');
-                document.getElementById('messageModal').style.display = 'block';
+            function checkPasswordStrength() {
+                const password = passwordInput.value;
+                const lengthRequirement = document.getElementById('lengthRequirement');
+                const uppercaseRequirement = document.getElementById('uppercaseRequirement');
+                const lowercaseRequirement = document.getElementById('lowercaseRequirement');
+                const numberRequirement = document.getElementById('numberRequirement');
+                const symbolRequirement = document.getElementById('symbolRequirement');
+
+                lengthRequirement.style.color = password.length >= 12 ? 'green' : 'red';
+                uppercaseRequirement.style.color = /[A-Z]/.test(password) ? 'green' : 'red';
+                lowercaseRequirement.style.color = /[a-z]/.test(password) ? 'green' : 'red';
+                numberRequirement.style.color = /[0-9]/.test(password) ? 'green' : 'red';
+                symbolRequirement.style.color = /[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'green' : 'red';
+
+                submitButton.disabled = !(password.length >= 12 &&
+                    /[A-Z]/.test(password) &&
+                    /[a-z]/.test(password) &&
+                    /[0-9]/.test(password) &&
+                    /[!@#$%^&*(),.?":{}|<>]/.test(password));
             }
+
+            function toggleVisibility(inputId, iconId) {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                if (input && icon) {
+                    input.type = input.type === "password" ? "text" : "password";
+                    icon.classList.toggle("fa-eye");
+                    icon.classList.toggle("fa-eye-slash");
+                }
+            }
+
+            document.querySelectorAll("[data-toggle-visibility]").forEach(button => {
+                button.addEventListener("click", function () {
+                    toggleVisibility(this.dataset.input, this.dataset.icon);
+                });
+            });
+
+            const expiryTime = <?= $expiry_time * 1000 ?>;
+            const totalValidity = <?= $total_validity * 1000 ?>;
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const timeLeft = expiryTime - now;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    alert('Token has expired. Redirecting to login page.');
+                    window.location.href = '../index.php';
+                    return;
+                }
+
+                document.getElementById('countdown').textContent = `Token expires in ${Math.floor(timeLeft / 1000)}s`;
+                document.getElementById('progress').style.width = `${(timeLeft / totalValidity) * 100}%`;
+            }
+
+            updateCountdown();
+            const countdownInterval = setInterval(updateCountdown, 1000);
         });
-
-        // Countdown timer for token expiry
-        let remainingTime = <?= $remaining_time ?>; // Remaining time in seconds
-        const expiryTime = new Date().getTime() + remainingTime * 1000; // Expiry time in milliseconds
-
-        function updateCountdown() {
-            const now = new Date().getTime();
-            const timeLeft = expiryTime - now;
-
-            if (timeLeft <= 0) {
-                clearInterval(countdownInterval);
-                alert('Token has expired. You will be redirected to the login page.');
-                window.location.href = '../index.php';
-                return;
-            }
-
-            const seconds = Math.floor(timeLeft / 1000);
-            document.getElementById('countdown').textContent = `Token will expire in ${seconds}s`;
-
-            // Update progress bar based on the full remaining time
-            const progress = (timeLeft / (remainingTime * 1000)) * 100;
-            document.getElementById('progress').style.width = `${progress}%`;
-        }
-
-        const countdownInterval = setInterval(updateCountdown, 1000);
-        updateCountdown(); // Initial call to avoid delay
     </script>
 </head>
-
 <body class="bg-light">
     <!-- Modal for displaying messages -->
     <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
@@ -259,5 +244,4 @@ $remaining_time = $expiry_time - $current_time; // Remaining time in seconds
     </div>
     <script src="../view/script.js"></script>
 </body>
-
 </html>

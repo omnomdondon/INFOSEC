@@ -57,6 +57,13 @@ if (!$user || strtotime($user["reset_token_expires_at"]) <= time()) {
     $stmt->bind_param("s", $token_hash);
     $stmt->execute();
 
+    // Debugging: Check if the query was successful
+    if ($stmt->affected_rows > 0) {
+        error_log("Token fields cleared for token hash: $token_hash");
+    } else {
+        error_log("No rows affected for token hash: $token_hash");
+    }
+
     $_SESSION['error_message'] = "Invalid or expired token.";
     header("Location: reset_password.php?token=$token");
     exit;
@@ -74,6 +81,13 @@ $sql = "UPDATE users
 $stmt = $mysqli->prepare($sql);
 $stmt->bind_param("si", $password_hash, $user["user_id"]);
 $stmt->execute();
+
+// Debugging: Check if the query was successful
+if ($stmt->affected_rows > 0) {
+    error_log("Password updated and token fields cleared for user ID: " . $user["user_id"]);
+} else {
+    error_log("No rows affected for user ID: " . $user["user_id"]);
+}
 
 $_SESSION['success_message'] = "Password updated successfully. You can now log in.";
 header("Location: ../index.php"); // Redirect to the login page
