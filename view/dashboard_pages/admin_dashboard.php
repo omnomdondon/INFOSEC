@@ -42,6 +42,7 @@ if (!$commentResult) {
     <title>Admin Dashboard</title>
     <link href="../../bootstrap/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
         .post-card {
@@ -95,6 +96,30 @@ if (!$commentResult) {
     </style>
 
     <script>
+        // Function to toggle password visibility
+        document.addEventListener("DOMContentLoaded", function() {
+            const togglePassword = document.getElementById('togglePassword');
+            const adminPassword = document.getElementById('adminPassword');
+
+            if (togglePassword && adminPassword) {
+                togglePassword.addEventListener('click', function() {
+                    // Toggle the type attribute of the password input
+                    const type = adminPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                    adminPassword.setAttribute('type', type);
+
+                    // Toggle the eye icon
+                    const eyeIcon = togglePassword.querySelector('i');
+                    if (type === 'password') {
+                        eyeIcon.classList.remove('bi-eye-slash');
+                        eyeIcon.classList.add('bi-eye');
+                    } else {
+                        eyeIcon.classList.remove('bi-eye');
+                        eyeIcon.classList.add('bi-eye-slash');
+                    }
+                });
+            }
+        });
+
         let timeout;
 
         function startTimer() {
@@ -108,11 +133,11 @@ if (!$commentResult) {
         }
 
         // Logout Confirmation Modal Handling
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function() {
             const logoutModal = document.getElementById('logoutConfirmationModal');
             const logoutLink = document.querySelector('a[data-bs-target="#logoutConfirmationModal"]');
 
-            logoutLink.addEventListener('click', function (e) {
+            logoutLink.addEventListener('click', function(e) {
                 e.preventDefault(); // Prevent default link behavior
                 const modal = new bootstrap.Modal(logoutModal);
                 modal.show();
@@ -120,7 +145,7 @@ if (!$commentResult) {
 
             // Handle the logout button click inside the modal
             const logoutButton = document.querySelector('#logoutConfirmationModal .btn-danger');
-            logoutButton.addEventListener('click', function () {
+            logoutButton.addEventListener('click', function() {
                 window.location.href = '../../controller/dashboard_logout.php'; // Redirect to logout page
             });
         });
@@ -160,12 +185,12 @@ if (!$commentResult) {
             const replyContent = document.getElementById(`replyContent-${commentId}`).value;
 
             fetch('../../controller/add_reply.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `comment_id=${commentId}&user_id=<?php echo $_SESSION['user_id']; ?>&reply_content=${encodeURIComponent(replyContent)}`
-            })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `comment_id=${commentId}&user_id=<?php echo $_SESSION['user_id']; ?>&reply_content=${encodeURIComponent(replyContent)}`
+                })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -181,16 +206,16 @@ if (!$commentResult) {
                 });
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById('editPostForm').addEventListener('submit', function (e) {
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById('editPostForm').addEventListener('submit', function(e) {
                 e.preventDefault();
 
                 const formData = new FormData(this);
 
                 fetch('../../controller/edit_post.php', {
-                    method: 'POST',
-                    body: formData
-                })
+                        method: 'POST',
+                        body: formData
+                    })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -210,12 +235,12 @@ if (!$commentResult) {
         function deletePost(postId) {
             if (confirm("Are you sure you want to delete this post?")) {
                 fetch('../../controller/delete_post.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `post_id=${postId}`
-                })
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `post_id=${postId}`
+                    })
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
@@ -235,6 +260,124 @@ if (!$commentResult) {
                         alert('Failed to delete post.');
                     });
             }
+        }
+
+        let pendingAction = null; // Store the pending action (comment or reply)
+        let pendingActionData = null; // Store the data for the pending action (e.g., post ID or comment ID)
+
+        // Function to confirm password before showing the comment or reply modal
+        function confirmPasswordBeforeAction(action, data) {
+            pendingAction = action; // Store the action (e.g., 'comment' or 'reply')
+            pendingActionData = data; // Store the data (e.g., post ID or comment ID)
+            document.getElementById('passwordError').style.display = 'none'; // Hide error message
+            document.getElementById('adminPassword').value = ''; // Clear password input
+            const modal = new bootstrap.Modal(document.getElementById('passwordConfirmationModal'));
+            modal.show();
+        }
+
+        // Handle password confirmation form submission
+        document.addEventListener("DOMContentLoaded", function() {
+            // Ensure the password confirmation form exists before attaching the event listener
+            const passwordConfirmationForm = document.getElementById('passwordConfirmationForm');
+            if (passwordConfirmationForm) {
+                passwordConfirmationForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const password = document.getElementById('adminPassword').value;
+
+                    fetch('../../controller/admin_confirm_password.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `adminPassword=${encodeURIComponent(password)}`
+                        })
+                        .then(response => response.text()) // Change .json() to .text() temporarily
+                        .then(text => {
+                            console.log("Raw response:", text); // Log the actual response
+                            try {
+                                const data = JSON.parse(text);
+                                if (data.success) {
+                                    // Password confirmed logic here...
+                                } else {
+                                    document.getElementById('passwordError').style.display = 'block';
+                                }
+                            } catch (error) {
+                                console.error("JSON parsing error:", error, text);
+                                alert("Invalid response from the server.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Failed to confirm password.');
+                        });
+                });
+            } else {
+                console.error('Password confirmation form not found.');
+            }
+        });
+
+        // Function to submit the comment after password confirmation
+        function submitComment(postId) {
+            const commentContent = document.getElementById(`commentText-${postId}`).value;
+
+            fetch('../../controller/add_comment.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `post_id=${postId}&user_id=<?php echo $_SESSION['user_id']; ?>&comment=${encodeURIComponent(commentContent)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.success);
+                        window.location.reload();
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to submit comment.');
+                });
+        }
+
+        // Function to submit the reply after password confirmation
+        function submitReply(commentId) {
+            const replyContent = document.getElementById(`replyContent-${commentId}`).value;
+
+            fetch('../../controller/add_reply.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `comment_id=${commentId}&user_id=<?php echo $_SESSION['user_id']; ?>&reply_content=${encodeURIComponent(replyContent)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.success);
+                        window.location.reload();
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to submit reply.');
+                });
+        }
+
+        // Inside the password confirmation success block
+        if (pendingAction === 'comment') {
+            console.log(`Showing comment modal for post ID: ${pendingActionData}`);
+            const commentModal = new bootstrap.Modal(document.getElementById(`commentModal-${pendingActionData}`));
+            commentModal.show();
+        } else if (pendingAction === 'reply') {
+            console.log(`Showing reply modal for comment ID: ${pendingActionData}`);
+            const replyModal = new bootstrap.Modal(document.getElementById(`replyModal-${pendingActionData}`));
+            replyModal.show();
         }
     </script>
 </head>
@@ -401,7 +544,7 @@ if (!$commentResult) {
 
                 if ($newsFeedResult->num_rows > 0):
                     while ($row = $newsFeedResult->fetch_assoc()):
-                        ?>
+                ?>
                         <div class="post-card">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="post-title"><?php echo htmlspecialchars($row['title']); ?></div>
@@ -422,8 +565,8 @@ if (!$commentResult) {
                             <div class="post-meta">
                                 Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
                             </div>
-                            <button type="button" class="btn btn-primary mt-2 bg-success" data-bs-toggle="modal"
-                                data-bs-target="#commentModal-<?php echo $row['post_id']; ?>">
+                            <!-- Comment Button -->
+                            <button type="button" class="btn btn-primary mt-2 bg-success" onclick="confirmPasswordBeforeAction('comment', <?php echo $row['post_id']; ?>)">
                                 Add Comment
                             </button>
 
@@ -433,24 +576,18 @@ if (!$commentResult) {
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title" id="commentModalLabel-<?php echo $row['post_id']; ?>">Add
-                                                Comment</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
+                                            <h5 class="modal-title" id="commentModalLabel-<?php echo $row['post_id']; ?>">Add Comment</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <form action="../../controller/add_comment.php" method="POST">
+                                            <form id="commentForm-<?php echo $row['post_id']; ?>">
                                                 <div class="mb-3">
-                                                    <label for="commentText-<?php echo $row['post_id']; ?>"
-                                                        class="form-label">Comment</label>
-                                                    <textarea class="form-control"
-                                                        id="commentText-<?php echo $row['post_id']; ?>" name="comment"
-                                                        required></textarea>
+                                                    <label for="commentText-<?php echo $row['post_id']; ?>" class="form-label">Comment</label>
+                                                    <textarea class="form-control" id="commentText-<?php echo $row['post_id']; ?>" name="comment" required></textarea>
                                                 </div>
                                                 <input type="hidden" name="post_id" value="<?php echo $row['post_id']; ?>" />
-                                                <input type="hidden" name="user_id"
-                                                    value="<?php echo $_SESSION['user_id']; ?>" />
-                                                <button type="submit" class="btn btn-success">Submit</button>
+                                                <input type="hidden" name="user_id" value="<?php echo $_SESSION['user_id']; ?>" />
+                                                <button type="button" class="btn btn-success" onclick="submitComment(<?php echo $row['post_id']; ?>)">Submit</button>
                                             </form>
                                         </div>
                                     </div>
@@ -485,8 +622,7 @@ if (!$commentResult) {
                                             </div>
 
                                             <!-- Reply Button -->
-                                            <button type="button" class="btn btn-sm btn-success mt-2" data-bs-toggle="modal"
-                                                data-bs-target="#replyModal-<?php echo $comment['id']; ?>">
+                                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="confirmPasswordBeforeAction('reply', <?php echo $comment['id']; ?>)">
                                                 Reply
                                             </button>
 
@@ -496,27 +632,18 @@ if (!$commentResult) {
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title" id="replyModalLabel-<?php echo $comment['id']; ?>">
-                                                                Reply to Comment
-                                                            </h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                                aria-label="Close"></button>
+                                                            <h5 class="modal-title" id="replyModalLabel-<?php echo $comment['id']; ?>">Reply to Comment</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                         </div>
                                                         <div class="modal-body">
                                                             <form id="replyForm-<?php echo $comment['id']; ?>">
-                                                                <input type="hidden" name="comment_id"
-                                                                    value="<?php echo $comment['id']; ?>">
-                                                                <input type="hidden" name="user_id"
-                                                                    value="<?php echo $_SESSION['user_id']; ?>">
+                                                                <input type="hidden" name="comment_id" value="<?php echo $comment['id']; ?>">
+                                                                <input type="hidden" name="user_id" value="<?php echo $_SESSION['user_id']; ?>">
                                                                 <div class="mb-3">
-                                                                    <label for="replyContent-<?php echo $comment['id']; ?>"
-                                                                        class="form-label">Reply</label>
-                                                                    <textarea class="form-control"
-                                                                        id="replyContent-<?php echo $comment['id']; ?>"
-                                                                        name="reply_content" required></textarea>
+                                                                    <label for="replyContent-<?php echo $comment['id']; ?>" class="form-label">Reply</label>
+                                                                    <textarea class="form-control" id="replyContent-<?php echo $comment['id']; ?>" name="reply_content" required></textarea>
                                                                 </div>
-                                                                <button type="button" class="btn btn-success"
-                                                                    onclick="submitReply(<?php echo $comment['id']; ?>)">Submit</button>
+                                                                <button type="button" class="btn btn-success" onclick="submitReply(<?php echo $comment['id']; ?>)">Submit</button>
                                                             </form>
                                                         </div>
                                                     </div>
@@ -550,11 +677,11 @@ if (!$commentResult) {
                                                                 Replied on <?php echo date("F j, Y, g:i A", strtotime($reply['created_at'])); ?>
                                                             </div>
                                                         </div>
-                                                    <?php endwhile;
+                                                <?php endwhile;
                                                 endif; ?>
                                             </div>
                                         </div>
-                                    <?php endwhile;
+                                <?php endwhile;
                                 endif;
                                 ?>
                             </div>
@@ -611,6 +738,33 @@ if (!$commentResult) {
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <a href="../../controller/dashboard_logout.php" class="btn btn-danger">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Confirmation Modal -->
+        <div class="modal fade" id="passwordConfirmationModal" tabindex="-1" aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="passwordConfirmationModalLabel">Confirm Password</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="passwordConfirmationForm">
+                            <div class="mb-3">
+                                <label for="adminPassword" class="form-label">Enter your password to continue:</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
+                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                        <i class="bi bi-eye"></i> <!-- Bootstrap Icons (eye icon) -->
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
+                            <button type="submit" class="btn btn-primary">Confirm</button>
+                        </form>
                     </div>
                 </div>
             </div>
