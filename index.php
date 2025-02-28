@@ -3,7 +3,6 @@ session_start();
 
 // Redirect logged-in users directly to the homepage
 if (isset($_SESSION['email'])) {
-    // header("Location: view/homepages/homepage1.php");
     header("Location: view/homepages/homepage1.php");
     exit();
 }
@@ -23,6 +22,40 @@ unset($_SESSION['success_message']);
     <link rel="stylesheet" href="fontawesome-free-6.7.1-web/css/all.min.css">
     <link rel="stylesheet" href="view/style.css">
     <title>Login/Register Page</title>
+    <style>
+        /* Password Strength Bar and Tooltip Styling */
+        .progress-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* Space between the progress bar and tooltip icon */
+            margin-top: 10px;
+        }
+
+        #password-strength-bar {
+            flex-grow: 1;
+            height: 8px;
+            /* Add height */
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+
+        #password-strength-progress {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        #tooltipIcon {
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        #tooltipIcon:hover {
+            color: #0d6efd;
+        }
+    </style>
     <script>
         // Toggle between login and signup forms
         function toggleForms(showLogin) {
@@ -69,34 +102,6 @@ unset($_SESSION['success_message']);
             }
         });
 
-        // ========================== Password Strength Checker =======================
-        document.getElementById('registerPassword').addEventListener('input', function () {
-            const password = this.value;
-            const lengthRequirement = document.getElementById('lengthRequirement');
-            const uppercaseRequirement = document.getElementById('uppercaseRequirement');
-            const lowercaseRequirement = document.getElementById('lowercaseRequirement');
-            const numberRequirement = document.getElementById('numberRequirement');
-            const symbolRequirement = document.getElementById('symbolRequirement');
-            const signUpButton = document.getElementById('signUpButton');
-
-            let isValid = true;
-
-            // Check password requirements
-            lengthRequirement.style.color = password.length >= 12 ? 'green' : 'red';
-            uppercaseRequirement.style.color = /[A-Z]/.test(password) ? 'green' : 'red';
-            lowercaseRequirement.style.color = /[a-z]/.test(password) ? 'green' : 'red';
-            numberRequirement.style.color = /[0-9]/.test(password) ? 'green' : 'red';
-            symbolRequirement.style.color = /[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'green' : 'red';
-
-            // Enable the signup button if all conditions are met
-            isValid = password.length >= 12 &&
-                /[A-Z]/.test(password) &&
-                /[a-z]/.test(password) &&
-                /[0-9]/.test(password) &&
-                /[!@#$%^&*(),.?":{}|<>]/.test(password);
-            signUpButton.disabled = !isValid;
-        });
-
         // ======================== Restrict paste action on login form password field =================================
         document.getElementById('password').addEventListener('paste', function (e) {
             e.preventDefault();  // Prevent paste
@@ -114,11 +119,6 @@ unset($_SESSION['success_message']);
             alert('Pasting is disabled in this field!');
         });
 
-        // ======================== Trigger password validation when the page loads ====================================
-        window.addEventListener('load', function () {
-            document.getElementById('registerPassword').dispatchEvent(new Event('input'));
-        });
-
         // ============== Toggle Password Visibility ===================== 
         function toggleVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
@@ -134,6 +134,70 @@ unset($_SESSION['success_message']);
                 icon.classList.add('fa-eye');
             }
         }
+
+        // ========================== Password Strength Checker =======================
+        document.addEventListener("DOMContentLoaded", function () {
+            const passwordInput = document.getElementById("registerPassword");
+            const passwordStrengthProgress = document.getElementById("password-strength-progress");
+            const passwordStrengthText = document.getElementById("password-strength-text");
+            const tooltipIcon = document.getElementById("tooltipIcon");
+
+            // Initialize progress bar width
+            passwordStrengthProgress.style.width = "0%";
+
+            // Password Strength Checker
+            passwordInput.addEventListener("input", function () {
+                const password = passwordInput.value;
+
+                // Define password requirements
+                const minLength = 12;
+                const hasUppercase = /[A-Z]/.test(password);
+                const hasLowercase = /[a-z]/.test(password);
+                const hasNumber = /[0-9]/.test(password);
+                const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+                // Calculate password strength
+                let strength = 0;
+                if (password.length >= minLength) strength += 20;
+                if (hasUppercase) strength += 20;
+                if (hasLowercase) strength += 20;
+                if (hasNumber) strength += 20;
+                if (hasSpecial) strength += 20;
+
+                // Update progress bar
+                passwordStrengthProgress.style.width = `${strength}%`;
+                if (strength < 40) {
+                    passwordStrengthProgress.classList.remove("bg-success", "bg-warning");
+                    passwordStrengthProgress.classList.add("bg-danger");
+                    passwordStrengthText.textContent = "Weak"; // Update strength text
+                } else if (strength < 80) {
+                    passwordStrengthProgress.classList.remove("bg-danger", "bg-success");
+                    passwordStrengthProgress.classList.add("bg-warning");
+                    passwordStrengthText.textContent = "Moderate"; // Update strength text
+                } else {
+                    passwordStrengthProgress.classList.remove("bg-danger", "bg-warning");
+                    passwordStrengthProgress.classList.add("bg-success");
+                    passwordStrengthText.textContent = "Strong"; // Update strength text
+                }
+
+                // Update password requirements list
+                document.getElementById("lengthRequirement").style.color = password.length >= minLength ? "green" : "red";
+                document.getElementById("uppercaseRequirement").style.color = hasUppercase ? "green" : "red";
+                document.getElementById("lowercaseRequirement").style.color = hasLowercase ? "green" : "red";
+                document.getElementById("numberRequirement").style.color = hasNumber ? "green" : "red";
+                document.getElementById("symbolRequirement").style.color = hasSpecial ? "green" : "red";
+
+                // Enable/disable signup button
+                const signUpButton = document.getElementById("signUpButton");
+                signUpButton.disabled = strength < 100;
+            });
+
+            // Initialize Bootstrap Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
     </script>
 </head>
 
@@ -213,13 +277,29 @@ unset($_SESSION['success_message']);
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="fa fa-lock"></i></span>
                         <input type="password" name="password" id="registerPassword" class="form-control"
-                            placeholder="Password" required data-bs-toggle="tooltip" data-bs-placement="right"
-                            title="Must have at least 12 characters, an uppercase letter, a lowercase letter, a number, and a special character">
+                            placeholder="Password" required />
                         <button type="button" class="btn btn-outline-secondary"
                             onclick="toggleVisibility('registerPassword', 'passwordIcon')">
                             <i id="passwordIcon" class="fa fa-eye"></i>
                         </button>
                     </div>
+
+                    <!-- Password Strength Bar and Tooltip -->
+                    <div class="progress-container">
+                        <div id="password-strength-text" class="small"></div> <!-- Strength text -->
+                        <div id="password-strength-bar" class="progress">
+                            <div id="password-strength-progress" class="progress-bar" role="progressbar"
+                                style="width: 0%;"></div>
+                        </div>
+                        <!-- Tooltip Icon -->
+                        <button type="button" class="btn p-0" id="tooltipIcon" data-bs-toggle="tooltip"
+                            data-bs-html="true"
+                            title="<ul class='mb-0 text-start'><li>At least 12 characters</li><li>Include uppercase letter</li><li>Include lowercase letter</li><li>Include numbers</li><li>Include special character</li></ul>">
+                            <i class="fa fa-info-circle fs-6"></i>
+                        </button>
+                    </div>
+
+                    <!-- Password Requirements -->
                     <div id="passwordRequirements" class="text-muted mb-3">
                         <ul>
                             <li id="lengthRequirement">At least 12 characters long</li>
@@ -229,6 +309,7 @@ unset($_SESSION['success_message']);
                             <li id="symbolRequirement">Includes special characters</li>
                         </ul>
                     </div>
+
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="fa fa-lock"></i></span>
                         <input type="password" name="confirmPassword" id="confirmPassword" class="form-control"
