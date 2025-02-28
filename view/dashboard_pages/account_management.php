@@ -23,6 +23,29 @@ $result = $CONN->query($query);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
+    <style>
+        .progress-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* Adjust the gap between the progress bar and the tooltip icon */
+        }
+
+        #password-strength-bar {
+            flex-grow: 1;
+        }
+
+        #tooltipIcon {
+            position: static;
+            /* Change from absolute to static */
+            transform: none;
+            /* Remove the transform */
+            transition: none;
+            /* Remove the transition */
+        }
+    </style>
+
     <script>
         let timeout;
 
@@ -172,8 +195,6 @@ $result = $CONN->query($query);
             </div>
         </div>
 
-        <!-- Previous code remains the same until the Create Account Modal -->
-
         <!-- Create Account Modal -->
         <div class="modal fade" id="signupModal" tabindex="-1" aria-labelledby="signupModalLabel" aria-hidden="true">
             <div class="modal-dialog">
@@ -209,18 +230,16 @@ $result = $CONN->query($query);
                                     </button>
                                 </div>
                                 <!-- Password Strength Indicator -->
-                                <div class="d-flex align-items-center mt-2">
-                                    <div class="flex-grow-1">
-                                        <div id="password-strength-text" class="small"></div>
-                                        <div id="password-strength-bar" class="progress mt-1">
-                                            <div id="password-strength-progress" class="progress-bar" role="progressbar"
-                                                style="width: 0%;"></div>
-                                        </div>
+                                <div class="progress-container mt-2">
+                                    <div id="password-strength-text" class="small"></div>
+                                    <div id="password-strength-bar" class="progress mt-1">
+                                        <div id="password-strength-progress" class="progress-bar" role="progressbar"
+                                            style="width: 0%;"></div>
                                     </div>
-                                    <!-- Tooltip Trigger beside the Password Strength Bar -->
-                                    <button type="button" class="btn p-0 ms-2" data-bs-toggle="tooltip"
+                                    <!-- Tooltip Icon -->
+                                    <button type="button" class="btn p-0" id="tooltipIcon" data-bs-toggle="tooltip"
                                         data-bs-html="true"
-                                        title="<ul class='mb-0 text-start'><li>At least 8 characters</li><li>Include uppercase letter</li><li>Include lowercase letter</li><li>Include numbers</li><li>Include special character</li></ul>">
+                                        title="<ul class='mb-0 text-start'><li>At least 12 characters</li><li>Include uppercase letter</li><li>Include lowercase letter</li><li>Include numbers</li><li>Include special character</li></ul>">
                                         <i class="bi bi-info-circle fs-6 text-secondary"></i>
                                     </button>
                                 </div>
@@ -270,9 +289,7 @@ $result = $CONN->query($query);
             const passwordInput = document.getElementById("password");
             const passwordStrengthText = document.getElementById("password-strength-text");
             const passwordStrengthProgress = document.getElementById("password-strength-progress");
-            const passwordRequirements = document.querySelectorAll("#password-requirements li");
-            const togglePasswordButton = document.getElementById("togglePassword");
-            const togglePasswordIcon = document.getElementById("togglePasswordIcon");
+            const tooltipIcon = document.getElementById("tooltipIcon");
 
             // Password Strength Checker
             passwordInput.addEventListener("input", function () {
@@ -309,23 +326,7 @@ $result = $CONN->query($query);
                     passwordStrengthText.textContent = "Strong";
                 }
 
-                // Update password requirements list
-                passwordRequirements[0].classList.toggle("text-success", password.length >= minLength);
-                passwordRequirements[1].classList.toggle("text-success", hasUppercase);
-                passwordRequirements[2].classList.toggle("text-success", hasLowercase);
-                passwordRequirements[3].classList.toggle("text-success", hasNumber);
-                passwordRequirements[4].classList.toggle("text-success", hasSpecial);
-            });
-
-            // Toggle Password Visibility
-            togglePasswordButton.addEventListener("click", function () {
-                if (passwordInput.type === "password") {
-                    passwordInput.type = "text";
-                    togglePasswordIcon.classList.replace("bi-eye", "bi-eye-slash");
-                } else {
-                    passwordInput.type = "password";
-                    togglePasswordIcon.classList.replace("bi-eye-slash", "bi-eye");
-                }
+                // No need to move the tooltip icon as it is now part of the flex container
             });
 
             // Initialize Bootstrap Tooltips
@@ -333,83 +334,8 @@ $result = $CONN->query($query);
             tooltipTriggerList.forEach(function (tooltipTriggerEl) {
                 new bootstrap.Tooltip(tooltipTriggerEl);
             });
-        });
 
-        function openEditModal(userId) {
-            // Fetch user data via AJAX
-            fetch(`../../controller/edit_account.php?id=${userId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        document.getElementById("edit_user_id").value = data.user_id;
-                        document.getElementById("edit_username").value = data.username;
-                        document.getElementById("edit_email").value = data.email;
-                        document.getElementById("edit_role").value = data.role;
-                        new bootstrap.Modal(document.getElementById("editUserModal")).show();
-                    }
-                })
-                .catch(error => console.error("Error fetching user data:", error));
-        }
-
-        // Handle form submission
-        document.getElementById("editUserForm").addEventListener("submit", function (event) {
-            event.preventDefault();
-
-            const userId = document.getElementById("edit_user_id").value;
-            const username = document.getElementById("edit_username").value;
-            const email = document.getElementById("edit_email").value;
-            const role = document.getElementById("edit_role").value;
-
-            fetch("../../controller/register.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: userId, username: username, email: email, role: role })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.success);
-                        location.reload(); // Refresh the page to reflect changes
-                    } else {
-                        alert(data.error);
-                    }
-                })
-                .catch(error => console.error("Error updating account:", error));
-        });
-
-        // Toggle password visibility
-        function toggleVisibility(inputId, iconId) {
-            const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove("bi-eye");
-                icon.classList.add("bi-eye-slash");
-            } else {
-                input.type = "password";
-                icon.classList.remove("bi-eye-slash");
-                icon.classList.add("bi-eye");
-            }
-        }
-
-        // Attach event listeners to the toggle buttons
-        document.getElementById('togglePassword').addEventListener('click', function () {
-            toggleVisibility('password', 'togglePasswordIcon');
-        });
-
-        document.getElementById('toggleConfirmPassword').addEventListener('click', function () {
-            toggleVisibility('confirm_password', 'toggleConfirmPasswordIcon');
-        });
-
-        document.addEventListener("DOMContentLoaded", function () {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-
-            // Toggle Password Visibility
+            // Toggle Password Visibility for Password Field
             document.getElementById("togglePassword").addEventListener("click", function () {
                 const passwordField = document.getElementById("password");
                 const icon = document.getElementById("togglePasswordIcon");
@@ -418,6 +344,19 @@ $result = $CONN->query($query);
                     icon.classList.replace("bi-eye", "bi-eye-slash");
                 } else {
                     passwordField.type = "password";
+                    icon.classList.replace("bi-eye-slash", "bi-eye");
+                }
+            });
+
+            // Toggle Password Visibility for Confirm Password Field
+            document.getElementById("toggleConfirmPassword").addEventListener("click", function () {
+                const confirmPasswordField = document.getElementById("confirm_password");
+                const icon = document.getElementById("toggleConfirmPasswordIcon");
+                if (confirmPasswordField.type === "password") {
+                    confirmPasswordField.type = "text";
+                    icon.classList.replace("bi-eye", "bi-eye-slash");
+                } else {
+                    confirmPasswordField.type = "password";
                     icon.classList.replace("bi-eye-slash", "bi-eye");
                 }
             });
