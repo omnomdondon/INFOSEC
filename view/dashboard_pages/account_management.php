@@ -205,19 +205,27 @@ $result = $CONN->query($query);
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="password" name="password" required>
                                     <button type="button" class="btn btn-outline-secondary" id="togglePassword">
-                                        <i class="bi bi-eye"></i>
+                                        <i id="togglePasswordIcon" class="bi bi-eye"></i>
                                     </button>
                                 </div>
                                 <!-- Password Strength Indicator -->
-                                <div id="password-strength" class="mt-2">
-                                    <div id="password-strength-text" class="small"></div>
-                                    <div id="password-strength-bar" class="progress mt-1">
-                                        <div id="password-strength-progress" class="progress-bar" role="progressbar"
-                                            style="width: 0%;"></div>
+                                <div class="d-flex align-items-center mt-2">
+                                    <div class="flex-grow-1">
+                                        <div id="password-strength-text" class="small"></div>
+                                        <div id="password-strength-bar" class="progress mt-1">
+                                            <div id="password-strength-progress" class="progress-bar" role="progressbar"
+                                                style="width: 0%;"></div>
+                                        </div>
                                     </div>
+                                    <!-- Tooltip Trigger beside the Password Strength Bar -->
+                                    <button type="button" class="btn p-0 ms-2" data-bs-toggle="tooltip"
+                                        data-bs-html="true"
+                                        title="<ul class='mb-0 text-start'><li>At least 8 characters</li><li>One uppercase letter</li><li>One lowercase letter</li><li>One number</li><li>One special character</li></ul>">
+                                        <i class="bi bi-info-circle fs-6 text-secondary"></i>
+                                    </button>
                                 </div>
                                 <!-- Password Requirements -->
-                                <div id="password-requirements" class="small mt-2">
+                                <!-- <div id="password-requirements" class="small mt-2">
                                     <ul class="list-unstyled">
                                         <li id="length" class="text-danger">At least 12 characters</li>
                                         <li id="uppercase" class="text-danger">Contains an uppercase letter</li>
@@ -225,7 +233,7 @@ $result = $CONN->query($query);
                                         <li id="number" class="text-danger">Contains a number</li>
                                         <li id="special" class="text-danger">Contains a special character</li>
                                     </ul>
-                                </div>
+                                </div> -->
                             </div>
                             <div class="mb-3">
                                 <label for="confirm_password" class="form-label">Confirm Password</label>
@@ -233,12 +241,12 @@ $result = $CONN->query($query);
                                     <input type="password" class="form-control" id="confirm_password"
                                         name="confirm_password" required>
                                     <button type="button" class="btn btn-outline-secondary" id="toggleConfirmPassword">
-                                        <i class="bi bi-eye"></i>
+                                        <i id="toggleConfirmPasswordIcon" class="bi bi-eye"></i>
                                     </button>
                                 </div>
                             </div>
                             <input type="hidden" name="role" value="user">
-                            <button type="submit" class="btn btn-primary" name="create_account">Create Account</button>
+                            <button type="submit" class="btn btn-success" name="create_account">Create Account</button>
                         </form>
                     </div>
                 </div>
@@ -268,51 +276,73 @@ $result = $CONN->query($query);
     </div>
 
     <script>
-        const passwordInput = document.getElementById('password');
-        const passwordStrengthText = document.getElementById('password-strength-text');
-        const passwordStrengthProgress = document.getElementById('password-strength-progress');
-        const passwordRequirements = document.getElementById('password-requirements').querySelectorAll('li');
+        document.addEventListener("DOMContentLoaded", function () {
+            const passwordInput = document.getElementById("password");
+            const passwordStrengthText = document.getElementById("password-strength-text");
+            const passwordStrengthProgress = document.getElementById("password-strength-progress");
+            const passwordRequirements = document.querySelectorAll("#password-requirements li");
+            const togglePasswordButton = document.getElementById("togglePassword");
+            const togglePasswordIcon = document.getElementById("togglePasswordIcon");
 
-        passwordInput.addEventListener('input', function () {
-            const password = passwordInput.value;
+            // Password Strength Checker
+            passwordInput.addEventListener("input", function () {
+                const password = passwordInput.value;
 
-            // Define password requirements
-            const minLength = 12;
-            const hasUppercase = /[A-Z]/.test(password);
-            const hasLowercase = /[a-z]/.test(password);
-            const hasNumber = /[0-9]/.test(password);
-            const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+                // Define password requirements
+                const minLength = 12;
+                const hasUppercase = /[A-Z]/.test(password);
+                const hasLowercase = /[a-z]/.test(password);
+                const hasNumber = /[0-9]/.test(password);
+                const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-            // Calculate password strength
-            let strength = 0;
-            if (password.length >= minLength) strength += 20;
-            if (hasUppercase) strength += 20;
-            if (hasLowercase) strength += 20;
-            if (hasNumber) strength += 20;
-            if (hasSpecial) strength += 20;
+                // Calculate password strength
+                let strength = 0;
+                if (password.length >= minLength) strength += 20;
+                if (hasUppercase) strength += 20;
+                if (hasLowercase) strength += 20;
+                if (hasNumber) strength += 20;
+                if (hasSpecial) strength += 20;
 
-            // Update progress bar and text
-            passwordStrengthProgress.style.width = `${strength}%`;
-            if (strength < 40) {
-                passwordStrengthProgress.classList.remove('bg-success', 'bg-warning');
-                passwordStrengthProgress.classList.add('bg-danger');
-                passwordStrengthText.textContent = 'Weak';
-            } else if (strength < 80) {
-                passwordStrengthProgress.classList.remove('bg-danger', 'bg-success');
-                passwordStrengthProgress.classList.add('bg-warning');
-                passwordStrengthText.textContent = 'Moderate';
-            } else {
-                passwordStrengthProgress.classList.remove('bg-danger', 'bg-warning');
-                passwordStrengthProgress.classList.add('bg-success');
-                passwordStrengthText.textContent = 'Strong';
-            }
+                // Update progress bar and text
+                passwordStrengthProgress.style.width = `${strength}%`;
+                if (strength < 40) {
+                    passwordStrengthProgress.classList.remove("bg-success", "bg-warning");
+                    passwordStrengthProgress.classList.add("bg-danger");
+                    passwordStrengthText.textContent = "Weak";
+                } else if (strength < 80) {
+                    passwordStrengthProgress.classList.remove("bg-danger", "bg-success");
+                    passwordStrengthProgress.classList.add("bg-warning");
+                    passwordStrengthText.textContent = "Moderate";
+                } else {
+                    passwordStrengthProgress.classList.remove("bg-danger", "bg-warning");
+                    passwordStrengthProgress.classList.add("bg-success");
+                    passwordStrengthText.textContent = "Strong";
+                }
 
-            // Update password requirements list
-            passwordRequirements[0].classList.toggle('text-success', password.length >= minLength);
-            passwordRequirements[1].classList.toggle('text-success', hasUppercase);
-            passwordRequirements[2].classList.toggle('text-success', hasLowercase);
-            passwordRequirements[3].classList.toggle('text-success', hasNumber);
-            passwordRequirements[4].classList.toggle('text-success', hasSpecial);
+                // Update password requirements list
+                passwordRequirements[0].classList.toggle("text-success", password.length >= minLength);
+                passwordRequirements[1].classList.toggle("text-success", hasUppercase);
+                passwordRequirements[2].classList.toggle("text-success", hasLowercase);
+                passwordRequirements[3].classList.toggle("text-success", hasNumber);
+                passwordRequirements[4].classList.toggle("text-success", hasSpecial);
+            });
+
+            // Toggle Password Visibility
+            togglePasswordButton.addEventListener("click", function () {
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    togglePasswordIcon.classList.replace("bi-eye", "bi-eye-slash");
+                } else {
+                    passwordInput.type = "password";
+                    togglePasswordIcon.classList.replace("bi-eye-slash", "bi-eye");
+                }
+            });
+
+            // Initialize Bootstrap Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         });
 
         function openEditModal(userId) {
@@ -357,6 +387,50 @@ $result = $CONN->query($query);
                     }
                 })
                 .catch(error => console.error("Error updating account:", error));
+        });
+
+        // Toggle password visibility
+        function toggleVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            }
+        }
+
+        // Attach event listeners to the toggle buttons
+        document.getElementById('togglePassword').addEventListener('click', function () {
+            toggleVisibility('password', 'togglePasswordIcon');
+        });
+
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function () {
+            toggleVisibility('confirm_password', 'toggleConfirmPasswordIcon');
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Toggle Password Visibility
+            document.getElementById("togglePassword").addEventListener("click", function () {
+                const passwordField = document.getElementById("password");
+                const icon = document.getElementById("togglePasswordIcon");
+                if (passwordField.type === "password") {
+                    passwordField.type = "text";
+                    icon.classList.replace("bi-eye", "bi-eye-slash");
+                } else {
+                    passwordField.type = "password";
+                    icon.classList.replace("bi-eye-slash", "bi-eye");
+                }
+            });
         });
     </script>
 
