@@ -4,6 +4,10 @@ session_start();
 // Set response header to JSON
 header('Content-Type: application/json');
 
+// Debugging: Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in'])) {
     echo json_encode(['success' => false, 'error' => 'Unauthorized access.']);
@@ -33,7 +37,7 @@ try {
     // Sanitize input
     $inputPassword = trim($_POST['adminPassword']);
 
-    // Prepare SQL query
+    // Prepare SQL query to fetch the admin's hashed password
     $query = "SELECT password FROM users WHERE role = 'admin' LIMIT 1";
     $stmt = $CONN->prepare($query);
 
@@ -52,23 +56,27 @@ try {
 
         // Verify password
         if (password_verify($inputPassword, $adminPasswordHash)) {
+            // Password is correct
             echo json_encode(['success' => true]);
         } else {
+            // Password is incorrect
             echo json_encode(['success' => false, 'error' => 'Incorrect password.']);
         }
     } else {
+        // No admin user found
         echo json_encode(['success' => false, 'error' => 'Admin user not found.']);
     }
 
     // Close statement
     $stmt->close();
 } catch (Exception $e) {
+    // Handle any exceptions
     echo json_encode(['success' => false, 'error' => 'An error occurred: ' . $e->getMessage()]);
-}
-
-// Close database connection
-if (isset($CONN)) {
-    $CONN->close();
+} finally {
+    // Close database connection
+    if (isset($CONN)) {
+        $CONN->close();
+    }
 }
 
 exit();

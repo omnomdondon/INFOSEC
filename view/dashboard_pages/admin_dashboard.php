@@ -277,7 +277,6 @@ if (!$commentResult) {
 
         // Handle password confirmation form submission
         document.addEventListener("DOMContentLoaded", function() {
-            // Ensure the password confirmation form exists before attaching the event listener
             const passwordConfirmationForm = document.getElementById('passwordConfirmationForm');
             if (passwordConfirmationForm) {
                 passwordConfirmationForm.addEventListener('submit', function(e) {
@@ -292,19 +291,23 @@ if (!$commentResult) {
                             },
                             body: `adminPassword=${encodeURIComponent(password)}`
                         })
-                        .then(response => response.text()) // Change .json() to .text() temporarily
-                        .then(text => {
-                            console.log("Raw response:", text); // Log the actual response
-                            try {
-                                const data = JSON.parse(text);
-                                if (data.success) {
-                                    // Password confirmed logic here...
-                                } else {
-                                    document.getElementById('passwordError').style.display = 'block';
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Password confirmed, proceed with the pending action
+                                if (pendingAction === 'comment') {
+                                    const commentModal = new bootstrap.Modal(document.getElementById(`commentModal-${pendingActionData}`));
+                                    commentModal.show();
+                                } else if (pendingAction === 'reply') {
+                                    const replyModal = new bootstrap.Modal(document.getElementById(`replyModal-${pendingActionData}`));
+                                    replyModal.show();
                                 }
-                            } catch (error) {
-                                console.error("JSON parsing error:", error, text);
-                                alert("Invalid response from the server.");
+                                // Hide the password confirmation modal
+                                const passwordModal = bootstrap.Modal.getInstance(document.getElementById('passwordConfirmationModal'));
+                                passwordModal.hide();
+                            } else {
+                                // Show error message
+                                document.getElementById('passwordError').style.display = 'block';
                             }
                         })
                         .catch(error => {
@@ -331,15 +334,15 @@ if (!$commentResult) {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert(data.success);
-                        window.location.reload();
+                        alert(data.success); // Show success message
+                        window.location.reload(); // Reload the page to show the new comment
                     } else {
-                        alert(data.error);
+                        alert(data.error); // Show error message
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to submit comment.');
+                    alert('Failed to submit comment.'); // Show generic error message
                 });
         }
 
@@ -354,11 +357,16 @@ if (!$commentResult) {
                     },
                     body: `comment_id=${commentId}&user_id=<?php echo $_SESSION['user_id']; ?>&reply_content=${encodeURIComponent(replyContent)}`
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
-                        alert(data.success);
-                        window.location.reload();
+                        alert(data.message);
+                        window.location.reload(); // Reload the page to show the new reply
                     } else {
                         alert(data.error);
                     }

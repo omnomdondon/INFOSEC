@@ -1,15 +1,17 @@
 <?php
-// Suppress warnings and errors
-error_reporting(0);
-ini_set('display_errors', 0);
-
 session_start();
-require '../model/connect.php'; // Ensure correct path
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// Include the database connection
+require '../model/connect.php';
+
+// Set response header to JSON
+header('Content-Type: application/json');
+
+// Check if the form is submitted
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate input
     if (!isset($_POST['comment_id'], $_POST['user_id'], $_POST['reply_content'])) {
-        header('Content-Type: application/json');
-        echo json_encode(["error" => "Missing parameters."]);
+        echo json_encode(['success' => false, 'error' => 'Missing parameters.']);
         exit;
     }
 
@@ -18,26 +20,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $reply_content = trim($_POST['reply_content']);
 
     if (empty($reply_content)) {
-        header('Content-Type: application/json');
-        echo json_encode(["error" => "Reply content cannot be empty."]);
+        echo json_encode(['success' => false, 'error' => 'Reply content cannot be empty.']);
         exit;
     }
 
+    // Prepare and execute the SQL query to insert the reply
     $stmt = $CONN->prepare("INSERT INTO comment_replies (comment_id, user_id, reply_content, created_at) VALUES (?, ?, ?, NOW())");
     $stmt->bind_param("iis", $comment_id, $user_id, $reply_content);
 
     if ($stmt->execute()) {
-        header('Content-Type: application/json');
-        echo json_encode(["success" => "Reply added successfully."]);
+        echo json_encode(['success' => true, 'message' => 'Reply added successfully.']);
     } else {
-        header('Content-Type: application/json');
-        echo json_encode(["error" => "Failed to add reply. Database error: " . $stmt->error]);
+        echo json_encode(['success' => false, 'error' => 'Failed to add reply: ' . $stmt->error]);
     }
 
+    // Close the statement
     $stmt->close();
-    $CONN->close();
 } else {
-    header('Content-Type: application/json');
-    echo json_encode(["error" => "Invalid request method."]);
+    echo json_encode(['success' => false, 'error' => 'Invalid request method.']);
 }
+
+// Close the connection
+$CONN->close();
 ?>

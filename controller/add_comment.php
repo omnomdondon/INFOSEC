@@ -1,7 +1,6 @@
 <?php
 // Start the session to access the logged-in user's data
 session_start();
-var_dump($_SESSION);
 
 // Include the database connection
 include '../model/connect.php';
@@ -18,13 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $author = $_SESSION['username']; // Get the logged-in user's name from session
     } else {
         // If the user is not logged in or session variables are missing, handle the error
-        echo "You need to be logged in to comment, or username is missing.";
+        echo json_encode(['error' => 'You need to be logged in to comment, or username is missing.']);
         exit;
     }
 
     // Validate input
     if (empty($comment)) {
-        echo "Comment cannot be empty.";
+        echo json_encode(['error' => 'Comment cannot be empty.']);
         exit;
     }
 
@@ -37,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->close();
 
     if ($post_count == 0) {
-        echo "The post you are trying to comment on does not exist.";
+        echo json_encode(['error' => 'The post you are trying to comment on does not exist.']);
         exit;
     }
 
@@ -46,22 +45,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("sisi", $author, $user_id, $comment, $post_id);
 
     if ($stmt->execute()) {
-        // Determine the source of the request and redirect accordingly
-        if (strpos($_SERVER['HTTP_REFERER'], 'admin_dashboard.php') !== false) {
-            // Redirect back to the admin dashboard with a success status
-            header("Location: ../view/dashboard_pages/admin_dashboard.php?status=success&closeModal=commentModal" . $post_id);
-        } else {
-            // Redirect back to the user homepage with a success status
-            header("Location: ../view/homepages/homepage1.php?status=success&closeModal=commentModal" . $post_id);
-        }
-        exit;
+        // Return a success response
+        echo json_encode(['success' => 'Comment submitted successfully.']);
     } else {
         // Handle error and show a message
-        echo "Error: " . $stmt->error;
+        echo json_encode(['error' => 'Error: ' . $stmt->error]);
     }
 
     // Close the statement
     $stmt->close();
+} else {
+    echo json_encode(['error' => 'Invalid request method.']);
 }
 
 // Close the connection
