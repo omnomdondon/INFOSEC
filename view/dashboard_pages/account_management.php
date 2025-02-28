@@ -220,20 +220,10 @@ $result = $CONN->query($query);
                                     <!-- Tooltip Trigger beside the Password Strength Bar -->
                                     <button type="button" class="btn p-0 ms-2" data-bs-toggle="tooltip"
                                         data-bs-html="true"
-                                        title="<ul class='mb-0 text-start'><li>At least 8 characters</li><li>One uppercase letter</li><li>One lowercase letter</li><li>One number</li><li>One special character</li></ul>">
+                                        title="<ul class='mb-0 text-start'><li>At least 8 characters</li><li>Include uppercase letter</li><li>Include lowercase letter</li><li>Include numbers</li><li>Include special character</li></ul>">
                                         <i class="bi bi-info-circle fs-6 text-secondary"></i>
                                     </button>
                                 </div>
-                                <!-- Password Requirements -->
-                                <!-- <div id="password-requirements" class="small mt-2">
-                                    <ul class="list-unstyled">
-                                        <li id="length" class="text-danger">At least 12 characters</li>
-                                        <li id="uppercase" class="text-danger">Contains an uppercase letter</li>
-                                        <li id="lowercase" class="text-danger">Contains a lowercase letter</li>
-                                        <li id="number" class="text-danger">Contains a number</li>
-                                        <li id="special" class="text-danger">Contains a special character</li>
-                                    </ul>
-                                </div> -->
                             </div>
                             <div class="mb-3">
                                 <label for="confirm_password" class="form-label">Confirm Password</label>

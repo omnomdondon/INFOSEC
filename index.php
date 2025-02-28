@@ -213,10 +213,11 @@ unset($_SESSION['success_message']);
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="fa fa-lock"></i></span>
                         <input type="password" name="password" id="registerPassword" class="form-control"
-                            placeholder="Password" required />
+                            placeholder="Password" required data-bs-toggle="tooltip" data-bs-placement="right"
+                            title="Must have at least 12 characters, an uppercase letter, a lowercase letter, a number, and a special character">
                         <button type="button" class="btn btn-outline-secondary"
-                            onclick="toggleVisibility('registerPassword', 'registerIcon')">
-                            <i id="registerIcon" class="fa fa-eye"></i>
+                            onclick="toggleVisibility('registerPassword', 'passwordIcon')">
+                            <i id="passwordIcon" class="fa fa-eye"></i>
                         </button>
                     </div>
                     <div id="passwordRequirements" class="text-muted mb-3">
