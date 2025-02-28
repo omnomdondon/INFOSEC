@@ -35,7 +35,6 @@ unset($_SESSION['success_message']);
 
         #password-strength-bar {
             flex-grow: 1;
-            height: 8px;
             /* Add height */
             background-color: #e9ecef;
             border-radius: 4px;
@@ -57,144 +56,119 @@ unset($_SESSION['success_message']);
         }
     </style>
     <script>
-        // Toggle between login and signup forms
-        function toggleForms(showLogin) {
-            document.getElementById('loginForm').style.display = showLogin ? 'block' : 'none';
-            document.getElementById('signupForm').style.display = showLogin ? 'none' : 'block';
-        }
+        document.addEventListener("DOMContentLoaded", function () {
+            // Toggle between login and signup forms
+            window.toggleForms = function (showLogin) {
+                document.querySelector('#loginForm')?.style.setProperty('display', showLogin ? 'block' : 'none');
+                document.querySelector('#signupForm')?.style.setProperty('display', showLogin ? 'none' : 'block');
+            };
 
-        // Form validation on submit
-        function validateForm() {
-            const password = document.getElementById("registerPassword").value;
-            const confirmPassword = document.getElementById("confirmPassword").value;
-            const errorMessage = document.getElementById("error-message");
+            // Form validation on submit
+            window.validateForm = function () {
+                const password = document.querySelector("#registerPassword")?.value;
+                const confirmPassword = document.querySelector("#confirmPassword")?.value;
+                const errorMessage = document.querySelector("#error-message");
 
-            errorMessage.innerHTML = '';
+                if (!password || !confirmPassword || !errorMessage) return false;
 
-            if (password !== confirmPassword) {
-                errorMessage.innerHTML = "Passwords do not match!";
-                return false;
-            }
+                errorMessage.textContent = '';
 
-            if (!/^(?=.{12,})/.test(password) || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-                errorMessage.innerHTML = "Password does not meet strength requirements. Must have at least 12 characters, uppercase/lowercase letters, numbers, and symbols.";
-                return false;
-            }
+                if (password !== confirmPassword) {
+                    errorMessage.textContent = "Passwords do not match!";
+                    return false;
+                }
 
-            return true;
-        }
+                if (!/^(?=.{12,})(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password)) {
+                    errorMessage.textContent = "Password must have at least 12 characters, uppercase/lowercase letters, numbers, and symbols.";
+                    return false;
+                }
 
-        // Auto-close Bootstrap alert after 2 seconds
-        document.addEventListener('DOMContentLoaded', function () {
+                return true;
+            };
+
+            // Auto-close Bootstrap alert after 2 seconds
             const successMessage = "<?php echo addslashes($successMessage); ?>";
             if (successMessage) {
                 const alertElement = document.createElement('div');
                 alertElement.classList.add('alert', 'alert-success', 'text-center');
                 alertElement.textContent = successMessage;
-                document.querySelector('.container').prepend(alertElement);
+                document.querySelector('.container')?.prepend(alertElement);
 
                 setTimeout(() => {
                     alertElement.classList.add('fade');
-                    setTimeout(() => {
-                        alertElement.remove();
-                    }, 500); // Wait for fade-out
-                }, 2000); // Show alert for 2 seconds
+                    setTimeout(() => alertElement.remove(), 500);
+                }, 2000);
             }
-        });
 
-        // ======================== Restrict paste action on login form password field =================================
-        document.getElementById('password').addEventListener('paste', function (e) {
-            e.preventDefault();  // Prevent paste
-            alert('Pasting is disabled in this field!');
-        });
-
-        // ======================== Restrict paste action on register form password fields =============================
-        document.getElementById('registerPassword').addEventListener('paste', function (e) {
-            e.preventDefault();  // Prevent paste
-            alert('Pasting is disabled in this field!');
-        });
-
-        document.getElementById('confirmPassword').addEventListener('paste', function (e) {
-            e.preventDefault();  // Prevent paste
-            alert('Pasting is disabled in this field!');
-        });
-
-        // ============== Toggle Password Visibility ===================== 
-        function toggleVisibility(inputId, iconId) {
-            const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
-
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-
-        // ========================== Password Strength Checker =======================
-        document.addEventListener("DOMContentLoaded", function () {
-            const passwordInput = document.getElementById("registerPassword");
-            const passwordStrengthProgress = document.getElementById("password-strength-progress");
-            const passwordStrengthText = document.getElementById("password-strength-text");
-            const tooltipIcon = document.getElementById("tooltipIcon");
-
-            // Initialize progress bar width
-            passwordStrengthProgress.style.width = "0%";
-
-            // Password Strength Checker
-            passwordInput.addEventListener("input", function () {
-                const password = passwordInput.value;
-
-                // Define password requirements
-                const minLength = 12;
-                const hasUppercase = /[A-Z]/.test(password);
-                const hasLowercase = /[a-z]/.test(password);
-                const hasNumber = /[0-9]/.test(password);
-                const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-                // Calculate password strength
-                let strength = 0;
-                if (password.length >= minLength) strength += 20;
-                if (hasUppercase) strength += 20;
-                if (hasLowercase) strength += 20;
-                if (hasNumber) strength += 20;
-                if (hasSpecial) strength += 20;
-
-                // Update progress bar
-                passwordStrengthProgress.style.width = `${strength}%`;
-                if (strength < 40) {
-                    passwordStrengthProgress.classList.remove("bg-success", "bg-warning");
-                    passwordStrengthProgress.classList.add("bg-danger");
-                    passwordStrengthText.textContent = "Weak"; // Update strength text
-                } else if (strength < 80) {
-                    passwordStrengthProgress.classList.remove("bg-danger", "bg-success");
-                    passwordStrengthProgress.classList.add("bg-warning");
-                    passwordStrengthText.textContent = "Moderate"; // Update strength text
-                } else {
-                    passwordStrengthProgress.classList.remove("bg-danger", "bg-warning");
-                    passwordStrengthProgress.classList.add("bg-success");
-                    passwordStrengthText.textContent = "Strong"; // Update strength text
+            // Restrict paste action on password fields
+            const disablePasteFields = ["#password", "#registerPassword", "#confirmPassword"];
+            disablePasteFields.forEach(selector => {
+                const field = document.querySelector(selector);
+                if (field) {
+                    field.addEventListener('paste', e => {
+                        e.preventDefault();
+                        alert('Pasting is disabled in this field!');
+                    });
                 }
-
-                // Update password requirements list
-                document.getElementById("lengthRequirement").style.color = password.length >= minLength ? "green" : "red";
-                document.getElementById("uppercaseRequirement").style.color = hasUppercase ? "green" : "red";
-                document.getElementById("lowercaseRequirement").style.color = hasLowercase ? "green" : "red";
-                document.getElementById("numberRequirement").style.color = hasNumber ? "green" : "red";
-                document.getElementById("symbolRequirement").style.color = hasSpecial ? "green" : "red";
-
-                // Enable/disable signup button
-                const signUpButton = document.getElementById("signUpButton");
-                signUpButton.disabled = strength < 100;
             });
 
+            // Toggle Password Visibility
+            window.toggleVisibility = function (inputId, iconId) {
+                const input = document.querySelector(`#${inputId}`);
+                const icon = document.querySelector(`#${iconId}`);
+
+                if (input && icon) {
+                    input.type = input.type === 'password' ? 'text' : 'password';
+                    icon.classList.toggle('fa-eye');
+                    icon.classList.toggle('fa-eye-slash');
+                }
+            };
+
+            // Password Strength Checker
+            const passwordInput = document.querySelector("#registerPassword");
+            const passwordStrengthProgress = document.querySelector("#password-strength-progress");
+            const passwordStrengthText = document.querySelector("#password-strength-text");
+
+            if (passwordInput && passwordStrengthProgress && passwordStrengthText) {
+                passwordInput.addEventListener("input", function () {
+                    const password = passwordInput.value;
+                    const minLength = 12;
+                    const hasUppercase = /[A-Z]/.test(password);
+                    const hasLowercase = /[a-z]/.test(password);
+                    const hasNumber = /[0-9]/.test(password);
+                    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+                    let strength = 0;
+                    if (password.length >= minLength) strength += 20;
+                    if (hasUppercase) strength += 20;
+                    if (hasLowercase) strength += 20;
+                    if (hasNumber) strength += 20;
+                    if (hasSpecial) strength += 20;
+
+                    passwordStrengthProgress.style.width = `${strength}%`;
+
+                    const strengthClasses = ["bg-danger", "bg-warning", "bg-success"];
+                    passwordStrengthProgress.classList.remove(...strengthClasses);
+
+                    if (strength < 40) {
+                        passwordStrengthProgress.classList.add("bg-danger");
+                        passwordStrengthText.textContent = "Weak";
+                    } else if (strength < 80) {
+                        passwordStrengthProgress.classList.add("bg-warning");
+                        passwordStrengthText.textContent = "Moderate";
+                    } else {
+                        passwordStrengthProgress.classList.add("bg-success");
+                        passwordStrengthText.textContent = "Strong";
+                    }
+
+                    // Enable/Disable signup button
+                    const signUpButton = document.querySelector("#signUpButton");
+                    if (signUpButton) signUpButton.disabled = strength < 100;
+                });
+            }
+
             // Initialize Bootstrap Tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltipTriggerEl => {
                 new bootstrap.Tooltip(tooltipTriggerEl);
             });
         });
@@ -285,29 +259,16 @@ unset($_SESSION['success_message']);
                     </div>
 
                     <!-- Password Strength Bar and Tooltip -->
-                    <div class="progress-container">
+                    <div class="progress-container mt-3 mb-3"> <!-- Added Bootstrap margin classes -->
                         <div id="password-strength-text" class="small"></div> <!-- Strength text -->
                         <div id="password-strength-bar" class="progress">
                             <div id="password-strength-progress" class="progress-bar" role="progressbar"
                                 style="width: 0%;"></div>
                         </div>
                         <!-- Tooltip Icon -->
-                        <button type="button" class="btn p-0" id="tooltipIcon" data-bs-toggle="tooltip"
-                            data-bs-html="true"
+                        <i id="tooltipIcon" class="fa fa-info-circle" data-bs-toggle="tooltip" data-bs-html="true"
                             title="<ul class='mb-0 text-start'><li>At least 12 characters</li><li>Include uppercase letter</li><li>Include lowercase letter</li><li>Include numbers</li><li>Include special character</li></ul>">
-                            <i class="fa fa-info-circle fs-6"></i>
-                        </button>
-                    </div>
-
-                    <!-- Password Requirements -->
-                    <div id="passwordRequirements" class="text-muted mb-3">
-                        <ul>
-                            <li id="lengthRequirement">At least 12 characters long</li>
-                            <li id="uppercaseRequirement">Includes uppercase letters</li>
-                            <li id="lowercaseRequirement">Includes lowercase letters</li>
-                            <li id="numberRequirement">Includes numbers</li>
-                            <li id="symbolRequirement">Includes special characters</li>
-                        </ul>
+                        </i>
                     </div>
 
                     <div class="input-group mb-2">
