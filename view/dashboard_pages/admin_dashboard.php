@@ -324,49 +324,69 @@ if (!$commentResult) {
         function submitComment(postId) {
             const commentContent = document.getElementById(`commentText-${postId}`).value;
 
-            fetch('../../controller/add_comment.php', {
+            fetch('../../controller/add_comment_admin.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `post_id=${postId}&user_id=<?php echo $_SESSION['user_id']; ?>&comment=${encodeURIComponent(commentContent)}`
+                    body: `post_id=${postId}&comment=${encodeURIComponent(commentContent)}`
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert(data.success); // Show success message
-                        window.location.reload(); // Reload the page to show the new comment
+                        alert(data.message);
+                        window.location.reload();
                     } else {
-                        alert(data.error); // Show error message
+                        alert(data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to submit comment.'); // Show generic error message
+                    alert('Failed to submit comment.');
                 });
         }
+
+        // function submitReply(commentId) {
+        //     const replyContent = document.getElementById(`replyContent-${commentId}`).value;
+
+        //     fetch('../../controller/add_reply_admin.php', {
+        //             method: 'POST',
+        //             headers: {
+        //                 'Content-Type': 'application/x-www-form-urlencoded',
+        //             },
+        //             body: `comment_id=${commentId}&reply_content=${encodeURIComponent(replyContent)}`
+        //         })
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             if (data.success) {
+        //                 alert(data.message);
+        //                 window.location.reload();
+        //             } else {
+        //                 alert(data.error);
+        //             }
+        //         })
+        //         .catch(error => {
+        //             console.error('Error:', error);
+        //             alert('Failed to submit reply.');
+        //         });
+        // }
 
         // Function to submit the reply after password confirmation
         function submitReply(commentId) {
             const replyContent = document.getElementById(`replyContent-${commentId}`).value;
 
-            fetch('../../controller/add_reply.php', {
+            fetch('../../controller/add_reply_admin.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
-                    body: `comment_id=${commentId}&user_id=<?php echo $_SESSION['user_id']; ?>&reply_content=${encodeURIComponent(replyContent)}`
+                    body: `comment_id=${commentId}&reply_content=${encodeURIComponent(replyContent)}`
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        window.location.reload(); // Reload the page to show the new reply
+                        window.location.reload();
                     } else {
                         alert(data.error);
                     }
@@ -574,8 +594,8 @@ if (!$commentResult) {
                                 Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
                             </div>
                             <!-- Comment Button -->
-                            <button type="button" class="btn btn-primary mt-2 bg-success" onclick="confirmPasswordBeforeAction('comment', <?php echo $row['post_id']; ?>)">
-                                Add Comment
+                            <button type="button" class="btn btn-primary mt-2 bg-success" onclick="submitComment(<?php echo $row['post_id']; ?>)">
+                                Comment
                             </button>
 
                             <!-- Comment Modal -->
@@ -630,7 +650,7 @@ if (!$commentResult) {
                                             </div>
 
                                             <!-- Reply Button -->
-                                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="confirmPasswordBeforeAction('reply', <?php echo $comment['id']; ?>)">
+                                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="submitReply(<?php echo $comment['id']; ?>)">
                                                 Reply
                                             </button>
 

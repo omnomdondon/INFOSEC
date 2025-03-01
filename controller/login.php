@@ -1,8 +1,11 @@
 <?php
 session_start();
 
-// Debugging: Check if user_id is being set correctly
-echo "User ID: " . ($_SESSION['user_id'] ?? 'Not set'); // Debugging
+// Debugging: Check if session variables are being set correctly
+error_log("Session variables before login:");
+error_log("User ID: " . ($_SESSION['user_id'] ?? 'Not set'));
+error_log("Username: " . ($_SESSION['username'] ?? 'Not set'));
+error_log("Role: " . ($_SESSION['role'] ?? 'Not set'));
 
 // Include database connection
 $CONN = require("../model/connect.php");
@@ -39,9 +42,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signIn'])) {
             $_SESSION['user_id'] = $user['user_id']; // Store user_id in session
             $_SESSION['alert_message'] = "Welcome, " . htmlspecialchars($user['username']) . "!";
 
-            // Set admin_logged_in session variable if the user is an admin
+            // Debugging: Check if session variables are being set correctly
+            error_log("Session variables after login:");
+            error_log("User ID: " . ($_SESSION['user_id'] ?? 'Not set'));
+            error_log("Username: " . ($_SESSION['username'] ?? 'Not set'));
+            error_log("Role: " . ($_SESSION['role'] ?? 'Not set'));
+
+            // Redirect based on user role
             if ($user['role'] === 'admin') {
-                $_SESSION['admin_logged_in'] = true; // Set admin session flag
                 error_log('User role is admin. Username: ' . $user['username']); // For debugging
                 header("Location: ../view/dashboard_pages/admin_dashboard.php");
                 exit;
@@ -64,3 +72,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signIn'])) {
         exit;
     }
 }
+?>

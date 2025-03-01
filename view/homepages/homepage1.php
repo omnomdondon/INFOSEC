@@ -140,7 +140,7 @@ if (!$result) {
             const comment_id = commentId;
             const user_id = <?php echo json_encode($user_id); ?>;
 
-            fetch('../../controller/add_reply.php', {
+            fetch('../../controller/add_reply_user.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -431,7 +431,7 @@ if (!$result) {
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <form action="../../controller/add_comment.php" method="POST">
+                                    <form action="../../controller/add_comment_user.php" method="POST">
                                         <input type="hidden" name="post_id" value="<?php echo $row['post_id']; ?>">
                                         <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
                                         <input type="hidden" name="author" value="<?php echo $username; ?>">
@@ -441,7 +441,7 @@ if (!$result) {
                                             <textarea class="form-control" id="commentText<?php echo $row['post_id']; ?>"
                                                 name="comment" rows="3" required></textarea>
                                         </div>
-                                        <button type="submit" class="btn btn-success">Submit Comment</button>
+                                        <button type="submit" class="btn btn-success">Submit</button>
                                     </form>
                                 </div>
                             </div>
