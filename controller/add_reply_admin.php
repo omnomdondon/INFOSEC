@@ -5,6 +5,7 @@ require '../model/connect.php';
 header('Content-Type: application/json'); // Set response header to JSON
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check if required fields are present
     if (!isset($_POST['comment_id'], $_POST['reply_content'])) {
         echo json_encode(['error' => 'Missing parameters.']);
         exit;
@@ -20,12 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $reply_content = trim($_POST['reply_content']);
     $user_id = $_SESSION['user_id'];
 
+    // Validate reply content
     if (empty($reply_content)) {
         echo json_encode(['error' => 'Reply content cannot be empty.']);
         exit;
     }
 
-    // Insert the reply
+    // Insert the reply into the database
     $stmt = $CONN->prepare("INSERT INTO comment_replies (comment_id, user_id, reply_content, created_at) VALUES (?, ?, ?, NOW())");
     $stmt->bind_param("iis", $comment_id, $user_id, $reply_content);
 

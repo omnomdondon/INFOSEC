@@ -1,6 +1,13 @@
 <?php
 session_start();
 
+// Disable error display
+ini_set('display_errors', 0);
+error_reporting(0);
+
+// Set response header to JSON
+header('Content-Type: application/json');
+
 // Check if password is confirmed
 if (!isset($_SESSION['password_confirmed']) || !$_SESSION['password_confirmed']) {
     http_response_code(403);

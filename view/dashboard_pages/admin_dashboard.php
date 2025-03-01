@@ -46,8 +46,11 @@ if (!$commentResult) {
 
     <style>
         .post-card {
+            position: relative;
+            /* Ensure the post card is a positioning context */
             margin-bottom: 20px;
-            padding: 20px;
+            padding: 15px;
+            /* Adjusted padding to make better use of space */
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             background-color: #fff;
@@ -55,8 +58,20 @@ if (!$commentResult) {
             transition: box-shadow 0.3s ease;
         }
 
-        .post-card:hover {
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        .post-actions-top {
+            position: absolute;
+            /* Position the buttons absolutely within the post card */
+            top: 15px;
+            /* Align with the top padding of the post card */
+            right: 15px;
+            /* Align with the right padding of the post card */
+            display: flex;
+            gap: 10px;
+        }
+
+        .post-actions-top .btn {
+            padding: 5px 10px;
+            font-size: 0.875rem;
         }
 
         .post-title {
@@ -64,6 +79,10 @@ if (!$commentResult) {
             font-weight: bold;
             color: #333;
             margin-bottom: 10px;
+            margin-top: 0;
+            /* Remove margin-top to align with buttons */
+            padding-right: 120px;
+            /* Add padding to prevent overlap with buttons */
         }
 
         .post-body {
@@ -136,11 +155,6 @@ if (!$commentResult) {
             margin-top: 5px;
         }
 
-        .btn-success {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
-
         .btn-success:hover {
             background-color: #218838;
             border-color: #1e7e34;
@@ -178,6 +192,36 @@ if (!$commentResult) {
                     }
                 });
             }
+
+            // Clear password field and reset the toggle button when modal is closed
+            const passwordConfirmationModal = document.getElementById('passwordConfirmationModal');
+            passwordConfirmationModal.addEventListener('hidden.bs.modal', function() {
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('passwordError').style.display = 'none';
+
+                const eyeIcon = document.querySelector('#togglePassword i');
+                eyeIcon.classList.remove('bi-eye-slash');
+                eyeIcon.classList.add('bi-eye');
+                document.getElementById('adminPassword').setAttribute('type', 'password');
+            });
+
+            // Add event listeners for comment form submission
+            document.querySelectorAll(".commentForm").forEach(form => {
+                form.addEventListener("submit", function(event) {
+                    event.preventDefault();
+
+                    const postId = this.getAttribute("data-post-id");
+                    const commentContent = document.getElementById(`commentText-${postId}`).value.trim();
+
+                    if (!commentContent) {
+                        alert("Comment cannot be empty.");
+                        return;
+                    }
+
+                    submitComment(postId, commentContent);
+                });
+            });
+
         });
 
         let timeout;
@@ -198,30 +242,26 @@ if (!$commentResult) {
             const logoutLink = document.querySelector('a[data-bs-target="#logoutConfirmationModal"]');
 
             logoutLink.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent default link behavior
+                e.preventDefault();
                 const modal = new bootstrap.Modal(logoutModal);
                 modal.show();
             });
 
-            // Handle the logout button click inside the modal
             const logoutButton = document.querySelector('#logoutConfirmationModal .btn-danger');
             logoutButton.addEventListener('click', function() {
-                window.location.href = '../../controller/dashboard_logout.php'; // Redirect to logout page
+                window.location.href = '../../controller/dashboard_logout.php';
             });
         });
 
-        // Reset timer on user activity
         document.addEventListener("mousemove", startTimer);
         document.addEventListener("keydown", startTimer);
-        document.addEventListener("mousedown", startTimer); // Detects clicks
-        document.addEventListener("wheel", startTimer); // Detects scrolling
-        document.addEventListener("touchstart", startTimer); // Detects mobile touch
+        document.addEventListener("mousedown", startTimer);
+        document.addEventListener("wheel", startTimer);
+        document.addEventListener("touchstart", startTimer);
+        startTimer();
 
-        startTimer(); // Initialize timer on page load
-
-        // Function to fetch post data and populate the edit modal
         function fetchPostData(postId) {
-            fetch(`../../controller/edit_post.php?id=${postId}`)
+            fetch(`../../controller/edit_post.php?post_id=${postId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
@@ -241,7 +281,6 @@ if (!$commentResult) {
                 });
         }
 
-        // Function to delete a post
         function deletePost(postId) {
             if (confirm("Are you sure you want to delete this post?")) {
                 fetch('../../controller/delete_post.php', {
@@ -251,16 +290,11 @@ if (!$commentResult) {
                         },
                         body: `post_id=${postId}`
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
                         if (data.success) {
                             alert(data.success);
-                            window.location.reload(); // Reload the page to reflect changes
+                            window.location.reload();
                         } else {
                             alert(data.error);
                         }
@@ -272,21 +306,18 @@ if (!$commentResult) {
             }
         }
 
-        // Function to confirm password before performing an action
+        // Function to confirm password and perform actions
         function confirmPasswordBeforeAction(action, data) {
-            // Set the action type and data in the modal
             document.getElementById('actionType').value = action;
             document.getElementById('actionData').value = JSON.stringify(data);
-
-            // Show the password confirmation modal
-            const modal = new bootstrap.Modal(document.getElementById('passwordConfirmationModal'));
-            modal.show();
+            const passwordModal = new bootstrap.Modal(document.getElementById('passwordConfirmationModal'));
+            passwordModal.show();
         }
 
-        // Function to handle password confirmation form submission
+        // Handle password confirmation form submission
         document.addEventListener("DOMContentLoaded", function() {
-            // Function to handle password confirmation form submission
             const passwordConfirmationForm = document.getElementById('passwordConfirmationForm');
+
             if (passwordConfirmationForm) {
                 passwordConfirmationForm.addEventListener('submit', function(event) {
                     event.preventDefault();
@@ -305,16 +336,16 @@ if (!$commentResult) {
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                // Password confirmed, proceed with the action
-                                if (actionType === 'delete_post') {
-                                    deletePost(actionData.postId);
-                                } else if (actionType === 'comment') {
-                                    submitComment(actionData.postId);
-                                } else if (actionType === 'reply') {
-                                    submitReply(actionData.commentId);
+                                const passwordModalElement = document.getElementById('passwordConfirmationModal');
+                                const passwordModal = bootstrap.Modal.getInstance(passwordModalElement);
+                                if (passwordModal) {
+                                    passwordModal.hide();
+                                }
+
+                                if (actionType === 'edit_post') {
+                                    fetchPostData(actionData.postId); // Fetch post data after password confirmation
                                 }
                             } else {
-                                // Show error message
                                 document.getElementById('passwordError').style.display = 'block';
                             }
                         })
@@ -324,33 +355,157 @@ if (!$commentResult) {
                         });
                 });
             } else {
-                console.error('Password confirmation form not found.');
+                console.error("passwordConfirmationForm not found in the DOM");
             }
         });
 
-        // Function to submit a reply after password confirmation
+        function fetchPostData(postId) {
+            fetch(`../../controller/edit_post.php?post_id=${postId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text(); // First, get the raw response as text
+                })
+                .then(text => {
+                    console.log("Raw response:", text); // Log the raw response
+                    return JSON.parse(text); // Parse the text as JSON
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        document.getElementById('editPostId').value = data.post_id;
+                        document.getElementById('editTitle').value = data.title;
+                        document.getElementById('editContent').value = data.content;
+
+                        const editPostModalElement = document.getElementById('editPostModal');
+                        if (editPostModalElement) {
+                            const editPostModal = new bootstrap.Modal(editPostModalElement);
+                            editPostModal.show();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching post data:', error);
+                    alert('Failed to fetch post data.');
+                });
+        }
+
+        // Handle edit post form submission
+        document.addEventListener("DOMContentLoaded", function() {
+            const editPostForm = document.getElementById('editPostForm');
+
+            if (editPostForm) {
+                editPostForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+
+                    const postId = document.getElementById('editPostId').value;
+                    const title = document.getElementById('editTitle').value;
+                    const content = document.getElementById('editContent').value;
+
+                    fetch('../../controller/edit_post.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `post_id=${postId}&title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.success);
+                                window.location.reload(); // Reload the page to reflect changes
+                            } else {
+                                alert(data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Failed to update post.');
+                        });
+                });
+            } else {
+                console.error("editPostForm not found in the DOM");
+            }
+        });
+
         function submitReply(commentId) {
-            const replyContent = document.getElementById(`replyContent-${commentId}`).value;
+            const replyContent = document.getElementById(`replyContent-${commentId}`).value.trim();
+
+            if (!replyContent) {
+                alert("Reply cannot be empty.");
+                return;
+            }
+
+            // Create a FormData object to send the data
+            const formData = new FormData();
+            formData.append('comment_id', commentId);
+            formData.append('reply_content', replyContent);
 
             fetch('../../controller/add_reply_admin.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `comment_id=${commentId}&reply_content=${encodeURIComponent(replyContent)}`
+                    body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        window.location.reload();
+                        // Close the reply modal
+                        const replyModalElement = document.getElementById(`replyModal-${commentId}`);
+                        const replyModal = bootstrap.Modal.getInstance(replyModalElement);
+                        if (replyModal) {
+                            replyModal.hide();
+                        }
+                        window.location.reload(); // Reload the page to reflect changes
                     } else {
-                        alert(data.error);
+                        alert("Error: " + data.error);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     alert('Failed to submit reply.');
+                });
+        }
+
+        function submitComment(postId, commentContent) {
+            // Create a FormData object to send the data
+            const formData = new FormData();
+            formData.append('post_id', postId);
+            formData.append('comment', commentContent);
+
+            fetch('../../controller/add_comment_admin.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        // Close the comment modal
+                        const commentModalElement = document.getElementById(`commentModal-${postId}`);
+                        const commentModal = bootstrap.Modal.getInstance(commentModalElement);
+                        if (commentModal) {
+                            commentModal.hide();
+                        }
+                        window.location.reload(); // Reload the page to reflect changes
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to submit comment.');
                 });
         }
     </script>
@@ -520,27 +675,31 @@ if (!$commentResult) {
                     while ($row = $newsFeedResult->fetch_assoc()):
                 ?>
                         <div class="post-card">
+                            <!-- Post Actions (Edit, Delete) at the top right -->
+                            <div class="post-actions-top">
+                                <button class="btn btn-light btn-sm" onclick="confirmPasswordBeforeAction('edit_post', { postId: <?php echo $row['post_id']; ?> })">
+                                    <i class="fas fa-pencil-alt"></i> Edit
+                                </button>
+                                <button class="btn btn-light btn-sm text-danger" onclick="confirmPasswordBeforeAction('delete_post', { postId: <?php echo $row['post_id']; ?> })">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
+
                             <!-- Post Title -->
                             <div class="post-title"><?php echo htmlspecialchars($row['title']); ?></div>
-
-                            <!-- Post Meta (Date) -->
-                            <div class="post-meta">
-                                Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
-                            </div>
 
                             <!-- Post Content -->
                             <div class="post-body">
                                 <?php echo nl2br(htmlspecialchars($row['content'])); ?>
                             </div>
 
-                            <!-- Post Actions (Edit, Delete, Comment) -->
+                            <!-- Post Meta (Date) -->
+                            <div class="post-meta">
+                                Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
+                            </div>
+
+                            <!-- Comment Button -->
                             <div class="post-actions">
-                                <button class="btn btn-light btn-sm" onclick="fetchPostData(<?php echo $row['post_id']; ?>)">
-                                    <i class="fas fa-pencil-alt"></i> Edit
-                                </button>
-                                <button class="btn btn-light btn-sm text-danger" onclick="confirmPasswordBeforeAction('delete_post', { postId: <?php echo $row['post_id']; ?> })">
-                                    <i class="fas fa-trash-alt"></i> Delete
-                                </button>
                                 <button type="button" class="btn btn-primary btn-sm bg-success" onclick="confirmPasswordBeforeAction('comment', { postId: <?php echo $row['post_id']; ?> })">
                                     <i class="fas fa-comment"></i> Comment
                                 </button>
@@ -556,14 +715,14 @@ if (!$commentResult) {
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            <form id="commentForm-<?php echo $row['post_id']; ?>">
+                                            <form id="commentForm-<?php echo $row['post_id']; ?>" onsubmit="event.preventDefault(); submitComment(<?php echo $row['post_id']; ?>, document.getElementById('commentText-<?php echo $row['post_id']; ?>').value);">
                                                 <div class="mb-3">
                                                     <label for="commentText-<?php echo $row['post_id']; ?>" class="form-label">Comment</label>
                                                     <textarea class="form-control" id="commentText-<?php echo $row['post_id']; ?>" name="comment" required></textarea>
                                                 </div>
                                                 <input type="hidden" name="post_id" value="<?php echo $row['post_id']; ?>" />
                                                 <input type="hidden" name="user_id" value="<?php echo $_SESSION['user_id']; ?>" />
-                                                <button type="button" class="btn btn-success" onclick="submitComment(<?php echo $row['post_id']; ?>)">Submit</button>
+                                                <button type="submit" class="btn btn-success">Submit</button>
                                             </form>
                                         </div>
                                     </div>
@@ -612,14 +771,14 @@ if (!$commentResult) {
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <form id="replyForm-<?php echo $comment['id']; ?>">
+                                                            <form id="replyForm-<?php echo $comment['id']; ?>" onsubmit="event.preventDefault(); submitReply(<?php echo $comment['id']; ?>);">
                                                                 <input type="hidden" name="comment_id" value="<?php echo $comment['id']; ?>">
                                                                 <input type="hidden" name="user_id" value="<?php echo $_SESSION['user_id']; ?>">
                                                                 <div class="mb-3">
                                                                     <label for="replyContent-<?php echo $comment['id']; ?>" class="form-label">Reply</label>
                                                                     <textarea class="form-control" id="replyContent-<?php echo $comment['id']; ?>" name="reply_content" required></textarea>
                                                                 </div>
-                                                                <button type="button" class="btn btn-success" onclick="submitReply(<?php echo $comment['id']; ?>)">Submit</button>
+                                                                <button type="submit" class="btn btn-success">Submit</button>
                                                             </form>
                                                         </div>
                                                     </div>
@@ -670,8 +829,7 @@ if (!$commentResult) {
         </div>
 
         <!-- Edit Post Modal -->
-        <div class="modal fade" id="editPostModal" tabindex="-1" aria-labelledby="editPostModalLabel"
-            aria-hidden="true">
+        <div class="modal fade" id="editPostModal" tabindex="-1" aria-labelledby="editPostModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -687,8 +845,7 @@ if (!$commentResult) {
                             </div>
                             <div class="mb-3">
                                 <label for="editContent" class="form-label">Content</label>
-                                <textarea class="form-control" id="editContent" name="content" rows="3"
-                                    required></textarea>
+                                <textarea class="form-control" id="editContent" name="content" rows="3" required></textarea>
                             </div>
                             <button type="submit" class="btn btn-success">Save Changes</button>
                         </form>
@@ -727,21 +884,19 @@ if (!$commentResult) {
                     </div>
                     <div class="modal-body">
                         <form id="passwordConfirmationForm">
-                            <!-- Hidden input to store the action type -->
                             <input type="hidden" id="actionType" name="actionType" value="">
-                            <!-- Hidden input to store the action data (e.g., post ID, comment ID) -->
                             <input type="hidden" id="actionData" name="actionData" value="">
                             <div class="mb-3">
                                 <label for="adminPassword" class="form-label">Enter your password to continue:</label>
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
                                     <button type="button" class="btn btn-outline-secondary" id="togglePassword">
-                                        <i class="bi bi-eye"></i> <!-- Bootstrap Icons (eye icon) -->
+                                        <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
                             </div>
                             <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
-                            <button type="submit" class="btn btn-primary">Confirm</button>
+                            <button type="submit" class="btn btn-success">Confirm</button>
                         </form>
                     </div>
                 </div>

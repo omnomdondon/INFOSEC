@@ -44,6 +44,9 @@ if ($expiry_time <= time()) {
         error_log("No rows affected for token hash: $token_hash");
     }
 
+    // Destroy the session to prevent further access to the reset password page
+    session_destroy();
+
     $_SESSION['error_message'] = "Token has expired.";
     echo "<script>
             alert('Token has expired. You will be redirected to the login page.');

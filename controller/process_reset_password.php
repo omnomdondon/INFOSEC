@@ -4,6 +4,10 @@ require __DIR__ . "/../model/connect.php";
 
 $mysqli = require __DIR__ . "/../model/connect.php"; // Get database connection
 
+if (!$mysqli) {
+    die("Database connection failed: " . $mysqli->connect_error);
+}
+
 $token = $_POST["token"];
 $reset_password = $_POST["reset_password"];
 $password_confirmation = $_POST["password_confirmation"];
@@ -44,6 +48,11 @@ if ($reset_password !== $password_confirmation) {
 $token_hash = hash("sha256", $token);
 $sql = "SELECT user_id, reset_token_hash, reset_token_expires_at FROM users WHERE reset_token_hash = ?";
 $stmt = $mysqli->prepare($sql);
+
+if (!$stmt) {
+    die("Failed to prepare statement: " . $mysqli->error);
+}
+
 $stmt->bind_param("s", $token_hash);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -54,6 +63,11 @@ if (!$user || strtotime($user["reset_token_expires_at"]) <= time()) {
     // Clear expired or invalid token
     $sql = "UPDATE users SET reset_token_hash = NULL, reset_token_expires_at = NULL WHERE reset_token_hash = ?";
     $stmt = $mysqli->prepare($sql);
+
+    if (!$stmt) {
+        die("Failed to prepare statement: " . $mysqli->error);
+    }
+
     $stmt->bind_param("s", $token_hash);
     $stmt->execute();
 
@@ -79,6 +93,11 @@ $sql = "UPDATE users
             reset_token_expires_at = NULL 
         WHERE user_id = ?";
 $stmt = $mysqli->prepare($sql);
+
+if (!$stmt) {
+    die("Failed to prepare statement: " . $mysqli->error);
+}
+
 $stmt->bind_param("si", $password_hash, $user["user_id"]);
 $stmt->execute();
 
@@ -88,6 +107,9 @@ if ($stmt->affected_rows > 0) {
 } else {
     error_log("No rows affected for user ID: " . $user["user_id"]);
 }
+
+// Destroy the session to prevent further access to the reset password page
+session_destroy();
 
 $_SESSION['success_message'] = "Password updated successfully. You can now log in.";
 header("Location: ../index.php"); // Redirect to the login page

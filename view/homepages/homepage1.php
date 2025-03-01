@@ -12,21 +12,28 @@ if (!isset($_SESSION['email']) || !isset($_SESSION['username']) || !isset($_SESS
     exit;
 }
 
+// Restrict access to users only (not admins)
+if ($_SESSION['role'] === 'admin') {
+    // Redirect admins to the admin dashboard or another appropriate page
+    header("Location: admin_dashboard.php");
+    exit;
+}
+
 // Retrieve the logged-in user's ID and role from the session
-$user_id = $_SESSION['user_id']; // Ensure this is the correct session variable for user ID
+$user_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
-$role = $_SESSION['role']; // Ensure role is set in the session during login
+$role = $_SESSION['role'];
 
 // Query to fetch posts
-$query = "SELECT post_id, title, content, created_at FROM posts ORDER BY created_at DESC"; // No user_id in posts table
+$query = "SELECT post_id, title, content, created_at FROM posts ORDER BY created_at DESC";
 $result = $CONN->query($query);
 
 // Display success/error messages
 if (isset($_GET['status'])) {
     if ($_GET['status'] === 'success') {
-        echo '<div class="alert alert-success text-center">Comment added successfully!</div>';
+        echo '<script>alert("Comment added successfully!");</script>';
     } elseif ($_GET['status'] === 'error') {
-        echo '<div class="alert alert-danger text-center">Failed to add comment. Please try again.</div>';
+        echo '<script>alert("Failed to add comment. Please try again.");</script>';
     }
 }
 
@@ -46,59 +53,102 @@ if (!$result) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         .post-card {
+            position: relative;
             margin-bottom: 20px;
-            padding: 20px;
-            border: 1px solid #dee2e6;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
             border-radius: 8px;
             background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            position: relative; /* Required for positioning buttons */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .post-actions-top {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .post-actions-top .btn {
+            padding: 5px 10px;
+            font-size: 0.875rem;
         }
 
         .post-title {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: bold;
+            color: #333;
             margin-bottom: 10px;
+            margin-top: 0;
+            padding-right: 120px;
         }
 
         .post-body {
             font-size: 1rem;
-            color: #495057;
+            color: #555;
+            line-height: 1.6;
             margin-bottom: 15px;
         }
 
         .post-meta {
-            font-size: 0.85rem;
-            color: #adb5bd;
+            font-size: 0.875rem;
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .post-actions {
+            position: relative;
+            top: auto;
+            right: auto;
             margin-top: 10px;
         }
 
         .comment {
             margin-top: 15px;
-            padding-left: 20px;
+            padding: 10px;
             border-left: 3px solid #28a745;
+            background-color: #f9f9f9;
+            border-radius: 4px;
         }
 
         .comment-author {
             font-weight: bold;
+            color: #333;
+        }
+
+        .comment-text {
+            color: #555;
+            margin-top: 5px;
         }
 
         .comment-meta {
-            color: #adb5bd;
+            font-size: 0.75rem;
+            color: #777;
+            margin-top: 5px;
         }
 
-        .replies {
+        .reply {
             margin-top: 10px;
-            padding-left: 20px;
+            padding-left: 15px;
             border-left: 2px solid #6c757d;
         }
 
         .reply-author {
             font-weight: bold;
+            color: #333;
+        }
+
+        .reply-text {
+            color: #555;
+            margin-top: 5px;
         }
 
         .reply-meta {
-            color: #adb5bd;
+            font-size: 0.75rem;
+            color: #777;
+            margin-top: 5px;
         }
 
         .post-actions {
@@ -134,6 +184,52 @@ if (!$result) {
 
         startTimer(); // Initialize timer on page load
 
+        // Function to validate the comment form
+        function validateCommentForm(postId) {
+            const commentContent = document.getElementById(`commentText${postId}`).value.trim();
+
+            if (!commentContent) {
+                alert("Comment content cannot be empty.");
+                return false; // Prevent form submission
+            }
+
+            return true; // Allow form submission
+        }
+
+        // Function to submit a comment
+        function submitComment(postId) {
+            const commentContent = document.getElementById(`commentText${postId}`).value.trim();
+            const userId = <?php echo json_encode($user_id); ?>;
+            const author = <?php echo json_encode($username); ?>;
+
+            if (!commentContent) {
+                alert("Comment content cannot be empty.");
+                return;
+            }
+
+            // Submit the form data using fetch
+            fetch('../../controller/add_comment_user.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `post_id=${postId}&user_id=${userId}&author=${encodeURIComponent(author)}&comment=${encodeURIComponent(commentContent)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.reload(); // Reload the page to show the new comment
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to submit comment.');
+                });
+        }
+
         // Function to submit a reply
         function submitReply(commentId) {
             const replyContent = document.getElementById(`replyContent-${commentId}`).value;
@@ -141,12 +237,12 @@ if (!$result) {
             const user_id = <?php echo json_encode($user_id); ?>;
 
             fetch('../../controller/add_reply_user.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `comment_id=${comment_id}&user_id=${user_id}&reply_content=${encodeURIComponent(replyContent)}`
-            })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `comment_id=${comment_id}&user_id=${user_id}&reply_content=${encodeURIComponent(replyContent)}`
+                })
                 .then(response => response.text()) // First, get the raw response as text
                 .then(text => {
                     console.log("Raw response:", text); // Log the raw response
@@ -192,12 +288,12 @@ if (!$result) {
         function deletePost(postId) {
             if (confirm("Are you sure you want to delete this post?")) {
                 fetch('../../controller/delete_post.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `post_id=${postId}`
-                })
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `post_id=${postId}`
+                    })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -214,29 +310,44 @@ if (!$result) {
             }
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById('editPostForm').addEventListener('submit', function (e) {
-                e.preventDefault();
+        document.addEventListener("DOMContentLoaded", function() {
+            // Add event listeners to all comment forms
+            document.querySelectorAll("[id^='commentForm']").forEach(form => {
+                form.addEventListener("submit", function(event) {
+                    event.preventDefault();
 
-                const formData = new FormData(this);
+                    const postId = this.querySelector("input[name='post_id']").value;
+                    const userId = this.querySelector("input[name='user_id']").value;
+                    const author = this.querySelector("input[name='author']").value;
+                    const commentContent = this.querySelector("textarea[name='comment']").value.trim();
 
-                fetch('../../controller/edit_post.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(data.success);
-                            window.location.reload();
-                        } else if (data.error) {
-                            alert(data.error);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error updating post:', error);
-                        alert('Failed to update post.');
-                    });
+                    if (!commentContent) {
+                        alert("Comment content cannot be empty.");
+                        return;
+                    }
+
+                    // Submit the form data using fetch
+                    fetch('../../controller/add_comment_user.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `post_id=${postId}&user_id=${userId}&author=${encodeURIComponent(author)}&comment=${encodeURIComponent(commentContent)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                window.location.reload(); // Reload the page to show the new comment
+                            } else {
+                                alert(data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Failed to submit comment.');
+                        });
+                });
             });
         });
     </script>
@@ -302,33 +413,26 @@ if (!$result) {
             <?php if ($result->num_rows > 0): ?>
                 <?php while ($row = $result->fetch_assoc()): ?>
                     <div class="post-card">
-                        <!-- Edit and Delete Buttons (Top-Right Corner) -->
-                        <?php if ($role === 'admin'): ?>
-                            <div class="post-actions">
-                                <!-- Edit Button -->
-                                <button class="btn btn-light btn-sm" onclick="fetchPostData(<?php echo $row['post_id']; ?>)">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </button>
-                                <!-- Delete Button -->
-                                <button class="btn btn-light btn-sm text-danger" onclick="deletePost(<?php echo $row['post_id']; ?>)">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        <?php endif; ?>
-
+                        <!-- Post Title -->
                         <div class="post-title"><?php echo htmlspecialchars($row['title']); ?></div>
+
+                        <!-- Post Content -->
                         <div class="post-body">
                             <?php echo nl2br(htmlspecialchars($row['content'])); ?>
                         </div>
+
+                        <!-- Post Meta (Date) -->
                         <div class="post-meta">
                             Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
                         </div>
 
-                        <!-- Add Comment Button -->
-                        <button class="btn btn-success mt-3" data-bs-toggle="modal"
-                            data-bs-target="#commentModal<?php echo $row['post_id']; ?>">
-                            Comment
-                        </button>
+                        <!-- Move Comment Button Below the Date -->
+                        <div class="post-actions mt-2">
+                            <button class="btn btn-primary btn-sm bg-success" data-bs-toggle="modal"
+                                data-bs-target="#commentModal<?php echo $row['post_id']; ?>">
+                                <i class="fas fa-comment"></i> Comment
+                            </button>
+                        </div>
 
                         <!-- Fetch and display comments -->
                         <div class="comments mt-3">
@@ -341,7 +445,7 @@ if (!$result) {
                             $commentsResult = $stmt->get_result();
                             if ($commentsResult->num_rows > 0):
                                 while ($comment = $commentsResult->fetch_assoc()):
-                                    ?>
+                            ?>
                                     <div class="comment">
                                         <div class="comment-author"><?php echo htmlspecialchars($comment['author']); ?>:</div>
                                         <div class="comment-text"><?php echo nl2br(htmlspecialchars($comment['comment'])); ?></div>
@@ -352,7 +456,7 @@ if (!$result) {
                                         <!-- Reply Button -->
                                         <button type="button" class="btn btn-sm btn-success mt-2" data-bs-toggle="modal"
                                             data-bs-target="#replyModal-<?php echo $comment['id']; ?>">
-                                            Reply
+                                            <i class="fas fa-reply"></i> Reply
                                         </button>
 
                                         <!-- Reply Modal -->
@@ -392,10 +496,10 @@ if (!$result) {
                                             <?php
                                             // Query to fetch replies for the current comment, joining with the users table to get the username
                                             $replyQuery = "SELECT r.reply_content, u.username AS author, r.created_at 
-                                       FROM comment_replies r 
-                                       JOIN users u ON r.user_id = u.user_id 
-                                       WHERE r.comment_id = ? 
-                                       ORDER BY r.created_at ASC";
+                               FROM comment_replies r 
+                               JOIN users u ON r.user_id = u.user_id 
+                               WHERE r.comment_id = ? 
+                               ORDER BY r.created_at ASC";
                                             $replyStmt = $CONN->prepare($replyQuery);
                                             $replyStmt->bind_param('i', $comment['id']);
                                             $replyStmt->execute();
@@ -411,11 +515,11 @@ if (!$result) {
                                                             Replied on <?php echo date("F j, Y, g:i A", strtotime($reply['created_at'])); ?>
                                                         </div>
                                                     </div>
-                                                <?php endwhile;
+                                            <?php endwhile;
                                             endif; ?>
                                         </div>
                                     </div>
-                                <?php endwhile;
+                            <?php endwhile;
                             endif; ?>
                         </div>
                     </div>
@@ -431,7 +535,7 @@ if (!$result) {
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <form action="../../controller/add_comment_user.php" method="POST">
+                                    <form id="commentForm<?php echo $row['post_id']; ?>" onsubmit="return validateCommentForm(<?php echo $row['post_id']; ?>)">
                                         <input type="hidden" name="post_id" value="<?php echo $row['post_id']; ?>">
                                         <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
                                         <input type="hidden" name="author" value="<?php echo $username; ?>">

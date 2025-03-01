@@ -4,8 +4,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Set response header to JSON
-header('Content-Type: application/json');
+// Debug session data
+error_log("Session data: " . print_r($_SESSION, true));
 
 // Check if admin is logged in
 if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
@@ -14,7 +14,13 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
 }
 
 // Include database connection
-require '../../model/connect.php';
+require '../model/connect.php'; // Corrected file path
+
+// Check if database connection is successful
+if (!$CONN) {
+    echo json_encode(['success' => false, 'error' => 'Database connection failed.']);
+    exit();
+}
 
 try {
     // Validate POST request

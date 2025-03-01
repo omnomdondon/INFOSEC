@@ -31,6 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post Dashboard</title>
     <link href="../../bootstrap/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"> <!-- Font Awesome -->
 
     <script>
         let timeout;
@@ -46,11 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Logout Confirmation Modal Handling
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", function() {
             const logoutModal = document.getElementById('logoutConfirmationModal');
             const logoutLink = document.querySelector('a[data-bs-target="#logoutConfirmationModal"]');
 
-            logoutLink.addEventListener('click', function (e) {
+            logoutLink.addEventListener('click', function(e) {
                 e.preventDefault(); // Prevent default link behavior
                 const modal = new bootstrap.Modal(logoutModal);
                 modal.show();
@@ -58,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Handle the logout button click inside the modal
             const logoutButton = document.querySelector('#logoutConfirmationModal .btn-danger');
-            logoutButton.addEventListener('click', function () {
+            logoutButton.addEventListener('click', function() {
                 window.location.href = '../../controller/dashboard_logout.php'; // Redirect to logout page
             });
         });
@@ -110,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="content" class="form-label">Content</label>
                 <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
             </div>
-            <button type="submit" class="btn btn-primary">Create Post</button>
+            <button type="button" class="btn btn-success" id="openPasswordModal">Create Post</button>
         </form>
     </div>
 
@@ -134,7 +136,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <!-- Password Confirmation Modal -->
+    <div class="modal fade" id="passwordConfirmModal" tabindex="-1" aria-labelledby="passwordConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passwordConfirmModalLabel">Confirm Your Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="passwordConfirmForm">
+                        <div class="mb-3 position-relative">
+                            <label for="adminPassword" class="form-label">Enter Your Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
+                                <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                    <i class="fa fa-eye" id="eyeIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="passwordError" class="text-danger"></div>
+                        <button type="submit" class="btn btn-success">Confirm</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
+<script>
+    document.getElementById('openPasswordModal').addEventListener('click', function() {
+        var passwordModal = new bootstrap.Modal(document.getElementById('passwordConfirmModal'));
+        passwordModal.show();
+    });
+
+    document.getElementById('passwordConfirmForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        let adminPassword = document.getElementById('adminPassword').value;
+        let passwordError = document.getElementById('passwordError');
+
+        fetch('admin_confirm_password.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'adminPassword=' + encodeURIComponent(adminPassword)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('passwordConfirmModal').querySelector('.btn-close').click();
+                    document.getElementById('passwordError').textContent = ''; // Clear error
+
+                    // Submit the post form after password confirmation
+                    document.querySelector('form').submit();
+                } else {
+                    passwordError.textContent = data.error;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                passwordError.textContent = 'Something went wrong. Please try again.';
+            });
+    });
+
+    document.getElementById('openPasswordModal').addEventListener('click', function() {
+        var passwordModal = new bootstrap.Modal(document.getElementById('passwordConfirmModal'));
+        passwordModal.show();
+    });
+
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        let passwordInput = document.getElementById('adminPassword');
+        let icon = this.querySelector('i');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    });
+
+    document.getElementById('passwordConfirmModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('adminPassword').value = ''; // Clear password field
+        document.getElementById('passwordError').textContent = ''; // Clear error message
+        let icon = document.getElementById('togglePassword').querySelector('i');
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye'); // Reset toggle icon
+        document.getElementById('adminPassword').type = 'password'; // Reset input type
+    });
+</script>
 
 </html>
