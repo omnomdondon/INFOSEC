@@ -5,6 +5,12 @@ include '../model/connect.php';
 header('Content-Type: application/json'); // Set response header to JSON
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check if password is confirmed
+    if (!isset($_SESSION['password_confirmed']) || !$_SESSION['password_confirmed']) {
+        echo json_encode(['error' => 'Password confirmation required.']);
+        exit;
+    }
+
     $post_id = intval($_POST['post_id']);
     $comment = trim($_POST['comment']);
 

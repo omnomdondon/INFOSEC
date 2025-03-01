@@ -1,6 +1,13 @@
 <?php
 session_start();
 
+// Check if password is confirmed
+if (!isset($_SESSION['password_confirmed']) || !$_SESSION['password_confirmed']) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Password confirmation required.']);
+    exit;
+}
+
 // Check if the user is logged in
 if (!isset($_SESSION['username'])) {
     http_response_code(403);

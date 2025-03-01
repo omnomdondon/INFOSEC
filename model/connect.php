@@ -2,9 +2,9 @@
 // Database configuration
 $HOST = 'localhost';
 $USER = 'root';
-$PASSWORD = 'DonBelle_111522';
+$PASSWORD = '111522';
 $DB = 'blog_db';
-$PORT = 3307;
+$PORT = 3306;
 
 // Debugging: Log connection attempt
 error_log("Attempting to connect to database: host=$HOST, user=$USER, db=$DB, port=$PORT");

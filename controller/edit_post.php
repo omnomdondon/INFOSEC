@@ -3,11 +3,12 @@ session_start();
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
-// if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
-//     http_response_code(403);
-//     echo json_encode(['error' => 'Unauthorized access.']);
-//     exit;
-// }
+// Check if password is confirmed
+if (!isset($_SESSION['password_confirmed']) || !$_SESSION['password_confirmed']) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Password confirmation required.']);
+    exit;
+}
 
 if (!isset($_SESSION['username'])) {
     http_response_code(403);

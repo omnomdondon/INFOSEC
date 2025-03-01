@@ -48,50 +48,112 @@ if (!$commentResult) {
         .post-card {
             margin-bottom: 20px;
             padding: 20px;
-            border: 1px solid #dee2e6;
+            border: 1px solid #e0e0e0;
             border-radius: 8px;
             background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .post-card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         .post-title {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: bold;
+            color: #333;
             margin-bottom: 10px;
         }
 
         .post-body {
             font-size: 1rem;
-            color: #495057;
+            color: #555;
+            line-height: 1.6;
             margin-bottom: 15px;
         }
 
         .post-meta {
-            font-size: 0.85rem;
-            color: #adb5bd;
-            margin-top: 10px;
+            font-size: 0.875rem;
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .post-actions .btn {
+            padding: 5px 10px;
+            font-size: 0.875rem;
         }
 
         .comment {
             margin-top: 15px;
-            padding-left: 20px;
+            padding: 10px;
             border-left: 3px solid #28a745;
+            background-color: #f9f9f9;
+            border-radius: 4px;
         }
 
         .comment-author {
             font-weight: bold;
+            color: #333;
+        }
+
+        .comment-text {
+            color: #555;
+            margin-top: 5px;
         }
 
         .comment-meta {
-            color: #adb5bd;
+            font-size: 0.75rem;
+            color: #777;
+            margin-top: 5px;
         }
 
-        .reply-meta {
-            color: #adb5bd;
+        .reply {
+            margin-top: 10px;
+            padding-left: 15px;
+            border-left: 2px solid #6c757d;
         }
 
         .reply-author {
             font-weight: bold;
+            color: #333;
+        }
+
+        .reply-text {
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .reply-meta {
+            font-size: 0.75rem;
+            color: #777;
+            margin-top: 5px;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
         }
     </style>
 
@@ -103,11 +165,9 @@ if (!$commentResult) {
 
             if (togglePassword && adminPassword) {
                 togglePassword.addEventListener('click', function() {
-                    // Toggle the type attribute of the password input
                     const type = adminPassword.getAttribute('type') === 'password' ? 'text' : 'password';
                     adminPassword.setAttribute('type', type);
 
-                    // Toggle the eye icon
                     const eyeIcon = togglePassword.querySelector('i');
                     if (type === 'password') {
                         eyeIcon.classList.remove('bi-eye-slash');
@@ -181,57 +241,7 @@ if (!$commentResult) {
                 });
         }
 
-        function submitReply(commentId) {
-            const replyContent = document.getElementById(`replyContent-${commentId}`).value;
-
-            fetch('../../controller/add_reply.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `comment_id=${commentId}&user_id=<?php echo $_SESSION['user_id']; ?>&reply_content=${encodeURIComponent(replyContent)}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.success); // Show success message as an alert
-                        window.location.reload(); // Reload the page to show the new reply
-                    } else {
-                        alert(data.error); // Show error message as an alert
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to submit reply.'); // Show generic error message as an alert
-                });
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            document.getElementById('editPostForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const formData = new FormData(this);
-
-                fetch('../../controller/edit_post.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert(data.success);
-                            window.location.reload();
-                        } else if (data.error) {
-                            alert(data.error);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error updating post:', error);
-                        alert('Failed to update post.');
-                    });
-            });
-        });
-
+        // Function to delete a post
         function deletePost(postId) {
             if (confirm("Are you sure you want to delete this post?")) {
                 fetch('../../controller/delete_post.php', {
@@ -262,49 +272,47 @@ if (!$commentResult) {
             }
         }
 
-        let pendingAction = null; // Store the pending action (comment or reply)
-        let pendingActionData = null; // Store the data for the pending action (e.g., post ID or comment ID)
-
-        // Function to confirm password before showing the comment or reply modal
+        // Function to confirm password before performing an action
         function confirmPasswordBeforeAction(action, data) {
-            pendingAction = action; // Store the action (e.g., 'comment' or 'reply')
-            pendingActionData = data; // Store the data (e.g., post ID or comment ID)
-            document.getElementById('passwordError').style.display = 'none'; // Hide error message
-            document.getElementById('adminPassword').value = ''; // Clear password input
+            // Set the action type and data in the modal
+            document.getElementById('actionType').value = action;
+            document.getElementById('actionData').value = JSON.stringify(data);
+
+            // Show the password confirmation modal
             const modal = new bootstrap.Modal(document.getElementById('passwordConfirmationModal'));
             modal.show();
         }
 
-        // Handle password confirmation form submission
+        // Function to handle password confirmation form submission
         document.addEventListener("DOMContentLoaded", function() {
+            // Function to handle password confirmation form submission
             const passwordConfirmationForm = document.getElementById('passwordConfirmationForm');
             if (passwordConfirmationForm) {
-                passwordConfirmationForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
+                passwordConfirmationForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
 
-                    const password = document.getElementById('adminPassword').value;
+                    const adminPassword = document.getElementById('adminPassword').value;
+                    const actionType = document.getElementById('actionType').value;
+                    const actionData = JSON.parse(document.getElementById('actionData').value);
 
                     fetch('../../controller/admin_confirm_password.php', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded',
                             },
-                            body: `adminPassword=${encodeURIComponent(password)}`
+                            body: `adminPassword=${encodeURIComponent(adminPassword)}`
                         })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                // Password confirmed, proceed with the pending action
-                                if (pendingAction === 'comment') {
-                                    const commentModal = new bootstrap.Modal(document.getElementById(`commentModal-${pendingActionData}`));
-                                    commentModal.show();
-                                } else if (pendingAction === 'reply') {
-                                    const replyModal = new bootstrap.Modal(document.getElementById(`replyModal-${pendingActionData}`));
-                                    replyModal.show();
+                                // Password confirmed, proceed with the action
+                                if (actionType === 'delete_post') {
+                                    deletePost(actionData.postId);
+                                } else if (actionType === 'comment') {
+                                    submitComment(actionData.postId);
+                                } else if (actionType === 'reply') {
+                                    submitReply(actionData.commentId);
                                 }
-                                // Hide the password confirmation modal
-                                const passwordModal = bootstrap.Modal.getInstance(document.getElementById('passwordConfirmationModal'));
-                                passwordModal.hide();
                             } else {
                                 // Show error message
                                 document.getElementById('passwordError').style.display = 'block';
@@ -320,58 +328,7 @@ if (!$commentResult) {
             }
         });
 
-        // Function to submit the comment after password confirmation
-        function submitComment(postId) {
-            const commentContent = document.getElementById(`commentText-${postId}`).value;
-
-            fetch('../../controller/add_comment_admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `post_id=${postId}&comment=${encodeURIComponent(commentContent)}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        window.location.reload();
-                    } else {
-                        alert(data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to submit comment.');
-                });
-        }
-
-        // function submitReply(commentId) {
-        //     const replyContent = document.getElementById(`replyContent-${commentId}`).value;
-
-        //     fetch('../../controller/add_reply_admin.php', {
-        //             method: 'POST',
-        //             headers: {
-        //                 'Content-Type': 'application/x-www-form-urlencoded',
-        //             },
-        //             body: `comment_id=${commentId}&reply_content=${encodeURIComponent(replyContent)}`
-        //         })
-        //         .then(response => response.json())
-        //         .then(data => {
-        //             if (data.success) {
-        //                 alert(data.message);
-        //                 window.location.reload();
-        //             } else {
-        //                 alert(data.error);
-        //             }
-        //         })
-        //         .catch(error => {
-        //             console.error('Error:', error);
-        //             alert('Failed to submit reply.');
-        //         });
-        // }
-
-        // Function to submit the reply after password confirmation
+        // Function to submit a reply after password confirmation
         function submitReply(commentId) {
             const replyContent = document.getElementById(`replyContent-${commentId}`).value;
 
@@ -395,17 +352,6 @@ if (!$commentResult) {
                     console.error('Error:', error);
                     alert('Failed to submit reply.');
                 });
-        }
-
-        // Inside the password confirmation success block
-        if (pendingAction === 'comment') {
-            console.log(`Showing comment modal for post ID: ${pendingActionData}`);
-            const commentModal = new bootstrap.Modal(document.getElementById(`commentModal-${pendingActionData}`));
-            commentModal.show();
-        } else if (pendingAction === 'reply') {
-            console.log(`Showing reply modal for comment ID: ${pendingActionData}`);
-            const replyModal = new bootstrap.Modal(document.getElementById(`replyModal-${pendingActionData}`));
-            replyModal.show();
         }
     </script>
 </head>
@@ -574,29 +520,31 @@ if (!$commentResult) {
                     while ($row = $newsFeedResult->fetch_assoc()):
                 ?>
                         <div class="post-card">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="post-title"><?php echo htmlspecialchars($row['title']); ?></div>
-                                <div>
-                                    <button class="btn btn-light btn-sm"
-                                        onclick="fetchPostData(<?php echo $row['post_id']; ?>)">
-                                        <i class="fas fa-pencil-alt"></i>
-                                    </button>
-                                    <button class="btn btn-light btn-sm text-danger"
-                                        onclick="deletePost(<?php echo $row['post_id']; ?>)">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="post-body">
-                                <?php echo nl2br(htmlspecialchars($row['content'])); ?>
-                            </div>
+                            <!-- Post Title -->
+                            <div class="post-title"><?php echo htmlspecialchars($row['title']); ?></div>
+
+                            <!-- Post Meta (Date) -->
                             <div class="post-meta">
                                 Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
                             </div>
-                            <!-- Comment Button -->
-                            <button type="button" class="btn btn-primary mt-2 bg-success" onclick="submitComment(<?php echo $row['post_id']; ?>)">
-                                Comment
-                            </button>
+
+                            <!-- Post Content -->
+                            <div class="post-body">
+                                <?php echo nl2br(htmlspecialchars($row['content'])); ?>
+                            </div>
+
+                            <!-- Post Actions (Edit, Delete, Comment) -->
+                            <div class="post-actions">
+                                <button class="btn btn-light btn-sm" onclick="fetchPostData(<?php echo $row['post_id']; ?>)">
+                                    <i class="fas fa-pencil-alt"></i> Edit
+                                </button>
+                                <button class="btn btn-light btn-sm text-danger" onclick="confirmPasswordBeforeAction('delete_post', { postId: <?php echo $row['post_id']; ?> })">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm bg-success" onclick="confirmPasswordBeforeAction('comment', { postId: <?php echo $row['post_id']; ?> })">
+                                    <i class="fas fa-comment"></i> Comment
+                                </button>
+                            </div>
 
                             <!-- Comment Modal -->
                             <div class="modal fade" id="commentModal-<?php echo $row['post_id']; ?>" tabindex="-1"
@@ -626,10 +574,10 @@ if (!$commentResult) {
                             <div class="comments mt-3">
                                 <?php
                                 $commentQuery = "SELECT c.id, c.comment, u.username AS author, c.created_at 
-                     FROM comments c 
-                     JOIN users u ON c.user_id = u.user_id 
-                     WHERE c.post_id = ? 
-                     ORDER BY c.created_at ASC";
+                         FROM comments c 
+                         JOIN users u ON c.user_id = u.user_id 
+                         WHERE c.post_id = ? 
+                         ORDER BY c.created_at ASC";
 
                                 $stmt = $CONN->prepare($commentQuery);
                                 $stmt->bind_param('i', $row['post_id']);
@@ -650,8 +598,8 @@ if (!$commentResult) {
                                             </div>
 
                                             <!-- Reply Button -->
-                                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="submitReply(<?php echo $comment['id']; ?>)">
-                                                Reply
+                                            <button type="button" class="btn btn-sm btn-success mt-2" onclick="confirmPasswordBeforeAction('reply', { commentId: <?php echo $comment['id']; ?> })">
+                                                <i class="fas fa-reply"></i> Reply
                                             </button>
 
                                             <!-- Reply Modal -->
@@ -682,10 +630,10 @@ if (!$commentResult) {
                                             <div class="replies mt-2 ms-4">
                                                 <?php
                                                 $replyQuery = "SELECT r.reply_content, u.username AS replier, r.created_at 
-                                   FROM comment_replies r 
-                                   JOIN users u ON r.user_id = u.user_id 
-                                   WHERE r.comment_id = ? 
-                                   ORDER BY r.created_at ASC";
+                                       FROM comment_replies r 
+                                       JOIN users u ON r.user_id = u.user_id 
+                                       WHERE r.comment_id = ? 
+                                       ORDER BY r.created_at ASC";
 
                                                 $replyStmt = $CONN->prepare($replyQuery);
                                                 $replyStmt->bind_param('i', $comment['id']);
@@ -713,8 +661,6 @@ if (!$commentResult) {
                                 endif;
                                 ?>
                             </div>
-
-
                         </div>
                     <?php endwhile; ?>
                 <?php else: ?>
@@ -781,6 +727,10 @@ if (!$commentResult) {
                     </div>
                     <div class="modal-body">
                         <form id="passwordConfirmationForm">
+                            <!-- Hidden input to store the action type -->
+                            <input type="hidden" id="actionType" name="actionType" value="">
+                            <!-- Hidden input to store the action data (e.g., post ID, comment ID) -->
+                            <input type="hidden" id="actionData" name="actionData" value="">
                             <div class="mb-3">
                                 <label for="adminPassword" class="form-label">Enter your password to continue:</label>
                                 <div class="input-group">
