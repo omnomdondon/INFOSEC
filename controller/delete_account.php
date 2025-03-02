@@ -4,18 +4,36 @@ include '../model/connect.php';
 
 // Ensure the user is logged in and has 'admin' role
 if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
-    header('Location: login.php');
+    echo json_encode(['success' => false, 'message' => 'Unauthorized access.']);
+    exit;
+}
+
+// Check if the ID is provided
+if (!isset($_GET['id'])) {
+    echo json_encode(['success' => false, 'message' => 'Error: No ID provided.']);
     exit;
 }
 
 $id = $_GET['id'];
-$stmt = $CONN->prepare("DELETE FROM users WHERE user_id = ?");
+
+// Prepare the SQL query
+$query = "DELETE FROM users WHERE user_id = ?";
+$stmt = $CONN->prepare($query);
+
+// Check if the query preparation was successful
+if (!$stmt) {
+    echo json_encode(['success' => false, 'message' => 'Error preparing query: ' . $CONN->error]);
+    exit;
+}
+
+// Bind the parameter and execute the query
 $stmt->bind_param("i", $id);
 
 if ($stmt->execute()) {
-    header('Location: ../view/dashboard_pages/account_management.php');
+    echo json_encode(['success' => true, 'message' => 'Account deleted successfully.']);
     exit;
 } else {
-    echo "Error: " . $stmt->error;
+    echo json_encode(['success' => false, 'message' => 'Error executing query: ' . $stmt->error]);
+    exit;
 }
 ?>

@@ -148,7 +148,7 @@ $result = $CONN->query($query);
                         echo "<td>" . htmlspecialchars($user['created_at']) . "</td>"; // Display created_at
                         echo "<td>
                             <button class='btn btn-warning btn-sm' onclick='openEditModal(" . $user['user_id'] . ")'>Edit</button>
-                            <a href='../../controller/delete_account.php?id=" . $user['user_id'] . "' class='btn btn-danger btn-sm' onclick='return confirm(\"Are you sure you want to delete this account?\")'>Delete</a>
+                            <button class='btn btn-danger btn-sm' onclick='openDeleteModal(" . $user['user_id'] . ")'>Delete</button>
                         </td>";
 
                         echo "</tr>";
@@ -282,6 +282,28 @@ $result = $CONN->query($query);
         </div>
     </div>
 
+    <!-- Edit Password Confirmation Modal -->
+    <div class="modal fade" id="editPasswordConfirmationModal" tabindex="-1" aria-labelledby="editPasswordConfirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPasswordConfirmationModalLabel">Confirm Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editPasswordConfirmationForm">
+                        <div class="mb-3">
+                            <label for="editAdminPassword" class="form-label">Admin Password</label>
+                            <input type="password" class="form-control" id="editAdminPassword" required>
+                        </div>
+                        <div id="editPasswordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
+                        <button type="submit" class="btn btn-primary">Confirm</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Password Confirmation Modal -->
     <div class="modal fade" id="passwordConfirmationModal" tabindex="-1" aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -304,23 +326,42 @@ $result = $CONN->query($query);
         </div>
     </div>
 
-    <!-- Edit Password Confirmation Modal -->
-    <div class="modal fade" id="editPasswordConfirmationModal" tabindex="-1" aria-labelledby="editPasswordConfirmationModalLabel" aria-hidden="true">
+    <!-- Delete Password Confirmation Modal -->
+    <div class="modal fade" id="deletePasswordConfirmationModal" tabindex="-1" aria-labelledby="deletePasswordConfirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editPasswordConfirmationModalLabel">Confirm Password</h5>
+                    <h5 class="modal-title" id="deletePasswordConfirmationModalLabel">Confirm Password</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="editPasswordConfirmationForm">
+                    <form id="deletePasswordConfirmationForm">
                         <div class="mb-3">
-                            <label for="editAdminPassword" class="form-label">Admin Password</label>
-                            <input type="password" class="form-control" id="editAdminPassword" required>
+                            <label for="deleteAdminPassword" class="form-label">Admin Password</label>
+                            <input type="password" class="form-control" id="deleteAdminPassword" required>
                         </div>
-                        <div id="editPasswordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
+                        <div id="deletePasswordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
                         <button type="submit" class="btn btn-primary">Confirm</button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this account? This action cannot be undone.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteButton">Delete</button>
                 </div>
             </div>
         </div>
@@ -565,26 +606,104 @@ $result = $CONN->query($query);
 
                 // Send form data to the server using fetch
                 fetch('../../controller/edit_account.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json()) // Parse the JSON response
-                .then(data => {
-                    if (data.success) {
-                        // Show success alert
-                        alert(data.success);
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json()) // Parse the JSON response
+                    .then(data => {
+                        if (data.success) {
+                            // Show success alert
+                            alert(data.success);
 
-                        // Refresh the page to reflect changes
-                        window.location.reload();
-                    } else {
-                        // Show error message
-                        alert(data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert("An error occurred while updating the account.");
-                });
+                            // Refresh the page to reflect changes
+                            window.location.reload();
+                        } else {
+                            // Show error message
+                            alert(data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert("An error occurred while updating the account.");
+                    });
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const deletePasswordConfirmationForm = document.getElementById('deletePasswordConfirmationForm');
+            const deletePasswordError = document.getElementById('deletePasswordError');
+            const deleteAdminPasswordInput = document.getElementById('deleteAdminPassword');
+            const deletePasswordConfirmationModal = new bootstrap.Modal(document.getElementById('deletePasswordConfirmationModal'));
+            const deleteConfirmationModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
+
+            let userIdToDelete = null; // Store the user ID to delete
+
+            // Function to open the Delete Password Confirmation Modal
+            window.openDeleteModal = function(userId) {
+                userIdToDelete = userId; // Store the user ID
+                deletePasswordConfirmationModal.show();
+            };
+
+            // Handle Delete Password Confirmation Form Submission
+            deletePasswordConfirmationForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const adminPassword = deleteAdminPasswordInput.value;
+
+                fetch('../../controller/admin_confirm_password.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `adminPassword=${encodeURIComponent(adminPassword)}`,
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            deletePasswordError.style.display = 'none';
+                            deletePasswordConfirmationModal.hide();
+
+                            // Show the Delete Confirmation Modal
+                            deleteConfirmationModal.show();
+                        } else {
+                            deletePasswordError.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+            });
+
+            // Handle the Delete Confirmation Button Click
+            document.getElementById('confirmDeleteButton').addEventListener('click', function() {
+                // Proceed to delete the account
+                fetch(`../../controller/delete_account.php?id=${userIdToDelete}`, {
+                        method: 'GET'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Show success message and refresh the page
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            // Show error message
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert("An error occurred while deleting the account.");
+                    });
+
+                // Hide the Delete Confirmation Modal
+                deleteConfirmationModal.hide();
+            });
+
+            // Clear the password field and error message when the modal is hidden
+            document.getElementById('deletePasswordConfirmationModal').addEventListener('hidden.bs.modal', function() {
+                deleteAdminPasswordInput.value = '';
+                deletePasswordError.style.display = 'none';
             });
         });
     </script>
