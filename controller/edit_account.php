@@ -15,14 +15,11 @@ if (!$CONN) {
 
 // Handle POST request to update an account
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Decode JSON input if sent as JSON
-    $inputData = json_decode(file_get_contents("php://input"), true);
-
-    // Use $_POST if JSON decoding fails
-    $userId = isset($inputData['user_id']) ? intval($inputData['user_id']) : intval($_POST['user_id'] ?? 0);
-    $username = trim($inputData['username'] ?? $_POST['username'] ?? '');
-    $email = trim($inputData['email'] ?? $_POST['email'] ?? '');
-    $role = trim($inputData['role'] ?? $_POST['role'] ?? '');
+    // Get form data
+    $userId = intval($_POST['user_id'] ?? 0);
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $role = trim($_POST['role'] ?? '');
 
     // Validate input
     if (empty($userId) || empty($username) || empty($email) || empty($role)) {

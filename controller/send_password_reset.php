@@ -35,7 +35,7 @@ $token = bin2hex(random_bytes(16));
 $token_hash = hash("sha256", $token);
 
 // Set expiry for the token (5 minutes - 60 * 5)
-$expiry = date("Y-m-d H:i:s", time() + 30);
+$expiry = date("Y-m-d H:i:s", time() + 60 * 5);
 
 // Update the database with the reset token and its expiry
 $sql = "UPDATE users SET reset_token_hash = ?, reset_token_expires_at = ? WHERE email = ?";

@@ -8,12 +8,13 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
 // Database connection
 include '../../model/connect.php';
 
-// Fetch comments
+// Fetch comments with a limit of 5 rows
 $query = "SELECT comments.id, comments.comment, comments.created_at, users.username AS comment_author, posts.title AS post_title
           FROM comments
           LEFT JOIN users ON comments.user_id = users.user_id
           LEFT JOIN posts ON comments.post_id = posts.post_id
-          ORDER BY comments.created_at DESC";
+          ORDER BY comments.created_at DESC
+          LIMIT 5"; // Limit the results to 5 rows
 $result = $CONN->query($query);
 
 if ($result === false) {
@@ -29,6 +30,84 @@ if ($result === false) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comments Dashboard</title>
     <link href="../../bootstrap/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        /* General Styling */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        p {
+            color: #666;
+        }
+
+        /* Scrollable table container */
+        .scrollable-table {
+            max-height: 300px; /* Adjust the height as needed */
+            overflow-y: auto; /* Enable vertical scrolling */
+            border: 1px solid #dee2e6; /* Optional: Add a border */
+            border-radius: 8px; /* Optional: Add rounded corners */
+            margin-bottom: 20px; /* Optional: Add some spacing */
+        }
+
+        /* Sticky table header */
+        .table thead th {
+            position: sticky;
+            top: 0; /* Stick to the top of the scrollable container */
+            background-color: #198754; /* Match the header background color */
+            color: #fff; /* Match the header text color */
+            z-index: 1; /* Ensure the header stays above the table rows */
+        }
+
+        /* Table Styling */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Modal Styling */
+        .modal-header {
+            color: #fff;
+        }
+
+        .modal-title {
+            font-weight: bold;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
 
     <script>
         let timeout;
@@ -89,6 +168,12 @@ if ($result === false) {
                         <a class="nav-link" href="post_dashboard.php">Post Dashboard</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="comments_dashboard.php">Comments Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="account_management.php">Account Management</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal"
                             data-bs-target="#logoutConfirmationModal">Logout</a>
                     </li>
@@ -100,26 +185,28 @@ if ($result === false) {
     <div class="container mt-4">
         <h2>Comments Management</h2>
         <?php if ($result->num_rows > 0): ?>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Comment</th>
-                        <th>Author</th>
-                        <th>Post</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $result->fetch_assoc()): ?>
+            <div class="scrollable-table">
+                <table class="table table-striped">
+                    <thead>
                         <tr>
-                            <td><?php echo htmlspecialchars($row['comment']); ?></td>
-                            <td><?php echo htmlspecialchars($row['comment_author']); ?></td>
-                            <td><?php echo htmlspecialchars($row['post_title']); ?></td>
-                            <td><?php echo htmlspecialchars($row['created_at']); ?></td>
+                            <th>Comment</th>
+                            <th>Author</th>
+                            <th>Post</th>
+                            <th>Date</th>
                         </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        <?php while ($row = $result->fetch_assoc()): ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($row['comment']); ?></td>
+                                <td><?php echo htmlspecialchars($row['comment_author']); ?></td>
+                                <td><?php echo htmlspecialchars($row['post_title']); ?></td>
+                                <td><?php echo htmlspecialchars($row['created_at']); ?></td>
+                            </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php else: ?>
             <p class="text-muted">No comments available.</p>
         <?php endif; ?>
@@ -130,7 +217,7 @@ if ($result === false) {
         aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-success">
                     <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>

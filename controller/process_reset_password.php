@@ -59,8 +59,18 @@ $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
 // If no valid user or token, clear expired token
-if (!$user || strtotime($user["reset_token_expires_at"]) <= time()) {
-    // Clear expired or invalid token
+if (!$user) {
+    $_SESSION['error_message'] = "Invalid or expired token.";
+    header("Location: reset_password.php?token=$token");
+    exit;
+}
+
+// Check if the token has expired
+$current_time = time();
+$expiry_time = strtotime($user["reset_token_expires_at"]);
+
+if ($expiry_time <= $current_time) {
+    // Clear expired token
     $sql = "UPDATE users SET reset_token_hash = NULL, reset_token_expires_at = NULL WHERE reset_token_hash = ?";
     $stmt = $mysqli->prepare($sql);
 
@@ -78,7 +88,7 @@ if (!$user || strtotime($user["reset_token_expires_at"]) <= time()) {
         error_log("No rows affected for token hash: $token_hash");
     }
 
-    $_SESSION['error_message'] = "Invalid or expired token.";
+    $_SESSION['error_message'] = "Token has expired. Please request a new password reset link.";
     header("Location: reset_password.php?token=$token");
     exit;
 }

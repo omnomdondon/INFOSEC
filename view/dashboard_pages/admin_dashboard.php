@@ -8,21 +8,21 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
 // Include database connection
 include '../../model/connect.php';
 
-// Query to fetch users data with created_at column
+// Query to fetch all users data
 $userQuery = "SELECT user_id, username, email, role, created_at FROM users";
 $userResult = $CONN->query($userQuery);
 if (!$userResult) {
     die("Error fetching users: " . $CONN->error);
 }
 
-// Query to fetch posts data
+// Query to fetch all posts data
 $postQuery = "SELECT post_id, title, content, created_at FROM posts";
 $postResult = $CONN->query($postQuery);
 if (!$postResult) {
     die("Error fetching posts: " . $CONN->error);
 }
 
-// Query to fetch comments data
+// Query to fetch all comments data
 $commentQuery = "SELECT c.id, c.comment, c.created_at, p.title AS post_title, u.username AS user_name 
                  FROM comments c 
                  JOIN posts p ON c.post_id = p.post_id
@@ -45,6 +45,84 @@ if (!$commentResult) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <style>
+        /* General Styling */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        p {
+            color: #666;
+        }
+
+        /* Tab Navigation Styling */
+        .nav-tabs {
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .nav-tabs .nav-link {
+            color: #555;
+            font-weight: 500;
+            border: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tabs .nav-link.active {
+            color: #198754;
+            border-bottom: 2px solid #198754;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: #198754;
+            border-bottom: 2px solid #198754;
+        }
+
+        /* Table Styling */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table thead {
+            background-color: #198754;
+            color: #fff;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        /* Alternating row colors */
+        .table tbody tr:nth-child(odd) {
+            background-color: #dee2e6;
+            /* White for odd rows */
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+            /* Light gray for even rows */
+        }
+
         .post-card {
             position: relative;
             /* Ensure the post card is a positioning context */
@@ -169,6 +247,44 @@ if (!$commentResult) {
             background-color: #c82333;
             border-color: #bd2130;
         }
+
+        /* Modal Styling */
+        .modal-header {
+            color: #fff;
+        }
+
+        .modal-title {
+            font-weight: bold;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #dee2e6;
+        }
+
+        /* Scrollable table container */
+        .scrollable-table {
+            max-height: 300px;
+            /* Adjust the height as needed */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+        }
+
+        /* Sticky table header */
+        .table thead th {
+            position: sticky;
+            top: 0;
+            /* Stick to the top of the scrollable container */
+            background-color: #198754;
+            /* Match the header background color */
+            color: #fff;
+            /* Match the header text color */
+            z-index: 1;
+            /* Ensure the header stays above the table rows */
+        }
     </style>
 
     <script>
@@ -260,6 +376,7 @@ if (!$commentResult) {
         document.addEventListener("touchstart", startTimer);
         startTimer();
 
+        // Function to fetch post data for editing
         function fetchPostData(postId) {
             fetch(`../../controller/edit_post.php?post_id=${postId}`)
                 .then(response => response.json())
@@ -267,17 +384,50 @@ if (!$commentResult) {
                     if (data.error) {
                         alert(data.error);
                     } else {
+                        // Populate the edit modal with the fetched data
                         document.getElementById('editPostId').value = data.post_id;
                         document.getElementById('editTitle').value = data.title;
                         document.getElementById('editContent').value = data.content;
 
-                        let modal = new bootstrap.Modal(document.getElementById('editPostModal'));
-                        modal.show();
+                        // Show the edit modal
+                        const editPostModal = new bootstrap.Modal(document.getElementById('editPostModal'));
+                        editPostModal.show();
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching post data:', error);
                     alert('Failed to fetch post data.');
+                });
+        }
+
+        // Function to update a post
+        function updatePost(postId, title, content) {
+            fetch('../../controller/edit_post.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `post_id=${postId}&title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}`
+                })
+                .then(response => {
+                    console.log("Raw response:", response); // Debugging: Log the raw response
+                    return response.json(); // Parse the response as JSON
+                })
+                .then(data => {
+                    console.log("Parsed response:", data); // Debugging: Log the parsed response
+                    if (data.success) {
+                        alert(data.message); // Display "Post updated successfully."
+
+                        // Close the edit modal
+                        const editPostModal = bootstrap.Modal.getInstance(document.getElementById('editPostModal'));
+                        editPostModal.hide();
+                    } else {
+                        alert(data.error); // Display the error message
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error); // Debugging: Log the error
+                    alert('Failed to update post.');
                 });
         }
 
@@ -344,6 +494,16 @@ if (!$commentResult) {
 
                                 if (actionType === 'edit_post') {
                                     fetchPostData(actionData.postId); // Fetch post data after password confirmation
+                                } else if (actionType === 'delete_post') {
+                                    deletePost(actionData.postId); // Delete post after password confirmation
+                                } else if (actionType === 'comment') {
+                                    // Open the comment modal after password confirmation
+                                    const commentModal = new bootstrap.Modal(document.getElementById(`commentModal-${actionData.postId}`));
+                                    commentModal.show();
+                                } else if (actionType === 'reply') {
+                                    // Open the reply modal after password confirmation
+                                    const replyModal = new bootstrap.Modal(document.getElementById(`replyModal-${actionData.commentId}`));
+                                    replyModal.show();
                                 }
                             } else {
                                 document.getElementById('passwordError').style.display = 'block';
@@ -568,98 +728,102 @@ if (!$commentResult) {
             <!-- Users Table -->
             <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
                 <h4>Users Table</h4>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col">User ID</th>
-                            <th scope="col">Username</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">Role</th>
-                            <th scope="col">Created At</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        if ($userResult->num_rows > 0) {
-                            while ($row = $userResult->fetch_assoc()) {
-                                echo "<tr>
-                                    <td>" . htmlspecialchars($row['user_id']) . "</td>
-                                    <td>" . htmlspecialchars($row['username']) . "</td>
-                                    <td>" . htmlspecialchars($row['email']) . "</td>
-                                    <td>" . htmlspecialchars($row['role']) . "</td>
-                                    <td>" . htmlspecialchars($row['created_at']) . "</td>
-                                </tr>";
+                <div class="scrollable-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">User ID</th>
+                                <th scope="col">Username</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            if ($userResult->num_rows > 0) {
+                                while ($row = $userResult->fetch_assoc()) {
+                                    echo "<tr>
+                                <td>" . htmlspecialchars($row['user_id']) . "</td>
+                                <td>" . htmlspecialchars($row['username']) . "</td>
+                                <td>" . htmlspecialchars($row['email']) . "</td>
+                                <td>" . htmlspecialchars($row['role']) . "</td>
+                                <td>" . htmlspecialchars($row['created_at']) . "</td>
+                              </tr>";
+                                }
+                            } else {
+                                echo "<tr><td colspan='5' class='text-center'>No users found.</td></tr>";
                             }
-                        } else {
-                            echo "<tr><td colspan='5' class='text-center'>No users found.</td></tr>";
-                        }
-                        ?>
-                    </tbody>
-                </table>
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- Posts Table -->
             <div class="tab-pane fade" id="posts" role="tabpanel" aria-labelledby="posts-tab">
                 <h4>Posts Table</h4>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col">Post ID</th>
-                            <th scope="col">Title</th>
-                            <th scope="col">Content</th>
-                            <th scope="col">Created At</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        if ($postResult->num_rows > 0) {
-                            while ($row = $postResult->fetch_assoc()) {
-                                echo "<tr>
-                                    <td>" . htmlspecialchars($row['post_id']) . "</td>
-                                    <td>" . htmlspecialchars($row['title']) . "</td>
-                                    <td>" . htmlspecialchars($row['content']) . "</td>
-                                    <td>" . htmlspecialchars($row['created_at']) . "</td>
-                                </tr>";
+                <div class="scrollable-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Post ID</th>
+                                <th scope="col">Title</th>
+                                <th scope="col">Content</th>
+                                <th scope="col">Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            if ($postResult->num_rows > 0) {
+                                while ($row = $postResult->fetch_assoc()) {
+                                    echo "<tr>
+                                <td>" . htmlspecialchars($row['post_id']) . "</td>
+                                <td>" . htmlspecialchars($row['title']) . "</td>
+                                <td>" . htmlspecialchars($row['content']) . "</td>
+                                <td>" . htmlspecialchars($row['created_at']) . "</td>
+                              </tr>";
+                                }
+                            } else {
+                                echo "<tr><td colspan='4' class='text-center'>No posts found.</td></tr>";
                             }
-                        } else {
-                            echo "<tr><td colspan='4' class='text-center'>No posts found.</td></tr>";
-                        }
-                        ?>
-                    </tbody>
-                </table>
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- Comments Table -->
             <div class="tab-pane fade" id="comments" role="tabpanel" aria-labelledby="comments-tab">
                 <h4>Comments Table</h4>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col">Comment ID</th>
-                            <th scope="col">Post Title</th>
-                            <th scope="col">User</th>
-                            <th scope="col">Comment</th>
-                            <th scope="col">Created At</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        if ($commentResult->num_rows > 0) {
-                            while ($row = $commentResult->fetch_assoc()) {
-                                echo "<tr>
-                                    <td>" . htmlspecialchars($row['id']) . "</td>
-                                    <td>" . htmlspecialchars($row['post_title']) . "</td>
-                                    <td>" . htmlspecialchars($row['user_name']) . "</td>
-                                    <td>" . htmlspecialchars($row['comment']) . "</td>
-                                    <td>" . htmlspecialchars($row['created_at']) . "</td>
-                                </tr>";
+                <div class="scrollable-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Comment ID</th>
+                                <th scope="col">Post Title</th>
+                                <th scope="col">User</th>
+                                <th scope="col">Comment</th>
+                                <th scope="col">Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            if ($commentResult->num_rows > 0) {
+                                while ($row = $commentResult->fetch_assoc()) {
+                                    echo "<tr>
+                                <td>" . htmlspecialchars($row['id']) . "</td>
+                                <td>" . htmlspecialchars($row['post_title']) . "</td>
+                                <td>" . htmlspecialchars($row['user_name']) . "</td>
+                                <td>" . htmlspecialchars($row['comment']) . "</td>
+                                <td>" . htmlspecialchars($row['created_at']) . "</td>
+                              </tr>";
+                                }
+                            } else {
+                                echo "<tr><td colspan='5' class='text-center'>No comments found.</td></tr>";
                             }
-                        } else {
-                            echo "<tr><td colspan='5' class='text-center'>No comments found.</td></tr>";
-                        }
-                        ?>
-                    </tbody>
-                </table>
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -710,7 +874,7 @@ if (!$commentResult) {
                                 aria-labelledby="commentModalLabel-<?php echo $row['post_id']; ?>" aria-hidden="true">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
-                                        <div class="modal-header">
+                                        <div class="modal-header bg-success">
                                             <h5 class="modal-title" id="commentModalLabel-<?php echo $row['post_id']; ?>">Add Comment</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
@@ -766,7 +930,7 @@ if (!$commentResult) {
                                                 aria-labelledby="replyModalLabel-<?php echo $comment['id']; ?>" aria-hidden="true">
                                                 <div class="modal-dialog">
                                                     <div class="modal-content">
-                                                        <div class="modal-header">
+                                                        <div class="modal-header bg-success">
                                                             <h5 class="modal-title" id="replyModalLabel-<?php echo $comment['id']; ?>">Reply to Comment</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                         </div>
@@ -832,7 +996,7 @@ if (!$commentResult) {
         <div class="modal fade" id="editPostModal" tabindex="-1" aria-labelledby="editPostModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header bg-success">
                         <h5 class="modal-title" id="editPostModalLabel">Edit Post</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -854,12 +1018,31 @@ if (!$commentResult) {
             </div>
         </div>
 
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success">
+                        <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Delete</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Are you sure you want to delete this post? This action cannot be undone.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteButton">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Logout Confirmation Modal -->
         <div class="modal fade" id="logoutConfirmationModal" tabindex="-1"
             aria-labelledby="logoutConfirmationModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header bg-success">
                         <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -878,7 +1061,7 @@ if (!$commentResult) {
         <div class="modal fade" id="passwordConfirmationModal" tabindex="-1" aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <div class="modal-header bg-success">
                         <h5 class="modal-title" id="passwordConfirmationModalLabel">Confirm Password</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>

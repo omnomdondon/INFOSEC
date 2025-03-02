@@ -1,29 +1,24 @@
 <?php
 session_start();
 
-// Disable error display
-ini_set('display_errors', 0);
-error_reporting(0);
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // Set response header to JSON
 header('Content-Type: application/json');
 
-// Check if password is confirmed
-if (!isset($_SESSION['password_confirmed']) || !$_SESSION['password_confirmed']) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Password confirmation required.']);
-    exit;
-}
-
-// Check if the user is logged in
-if (!isset($_SESSION['username'])) {
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized access.']);
     exit;
 }
 
-include '../model/connect.php'; // Include the database connection
+// Include database connection
+include '../model/connect.php';
 
+// Function to delete a post
 function deletePost($postId, $conn) {
     // Prepare query to delete the post
     $deleteQuery = "DELETE FROM posts WHERE post_id = ?";

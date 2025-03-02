@@ -1,45 +1,46 @@
 <?php
 session_start();
-
-// Include the database connection
 require '../model/connect.php';
 
-// Check if the user is logged in
-if (!isset($_SESSION['user_id'])) {
-    echo "<script>alert('You must be logged in to reply.'); window.history.back();</script>";
-    exit;
-}
+header('Content-Type: application/json'); // Set response header to JSON
 
-// Check if the form is submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Check if required fields are present
     if (!isset($_POST['comment_id'], $_POST['reply_content'])) {
-        echo "<script>alert('Missing parameters.'); window.history.back();</script>";
+        echo json_encode(['error' => 'Missing parameters.']);
+        exit;
+    }
+
+    // Check if the user is logged in
+    if (!isset($_SESSION['user_id'])) {
+        echo json_encode(['error' => 'You need to be logged in to reply.']);
         exit;
     }
 
     $comment_id = intval($_POST['comment_id']);
-    $user_id = $_SESSION['user_id'];
     $reply_content = trim($_POST['reply_content']);
+    $user_id = $_SESSION['user_id'];
 
+    // Validate reply content
     if (empty($reply_content)) {
-        echo "<script>alert('Reply content cannot be empty.'); window.history.back();</script>";
+        echo json_encode(['error' => 'Reply content cannot be empty.']);
         exit;
     }
 
-    // Insert the reply
+    // Insert the reply into the database
     $stmt = $CONN->prepare("INSERT INTO comment_replies (comment_id, user_id, reply_content, created_at) VALUES (?, ?, ?, NOW())");
     $stmt->bind_param("iis", $comment_id, $user_id, $reply_content);
 
     if ($stmt->execute()) {
-        echo "<script>alert('Reply added successfully.'); window.location.href = '../../view/homepages/homepage1.php';</script>";
+        echo json_encode(['success' => true, 'message' => 'Reply added successfully.']);
     } else {
-        error_log("Failed to add reply: " . $stmt->error);
-        echo "<script>alert('Failed to add reply: " . $stmt->error . "'); window.history.back();</script>";
+        error_log("Error in add_reply_user.php: " . $stmt->error);
+        echo json_encode(['error' => 'Failed to add reply: ' . $stmt->error]);
     }
 
     $stmt->close();
 } else {
-    echo "<script>alert('Invalid request method.'); window.history.back();</script>";
+    echo json_encode(['error' => 'Invalid request method.']);
 }
 
 $CONN->close();

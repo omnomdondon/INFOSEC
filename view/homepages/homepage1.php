@@ -2,6 +2,11 @@
 // Start session to access user information
 session_start();
 
+// Prevent caching
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 // Include the database connection
 include '../../model/connect.php';
 
@@ -152,9 +157,10 @@ if (!$result) {
         }
 
         .post-actions {
-            position: absolute;
-            top: 10px;
-            right: 10px;
+            position: relative;
+            margin-top: 10px;
+            text-align: left;
+            /* Align the button to the left */
         }
 
         .post-actions .btn {
@@ -243,17 +249,13 @@ if (!$result) {
                     },
                     body: `comment_id=${comment_id}&user_id=${user_id}&reply_content=${encodeURIComponent(replyContent)}`
                 })
-                .then(response => response.text()) // First, get the raw response as text
-                .then(text => {
-                    console.log("Raw response:", text); // Log the raw response
-                    return JSON.parse(text); // Then try to parse it as JSON
-                })
+                .then(response => response.json()) // Directly parse the response as JSON
                 .then(data => {
                     if (data.success) {
-                        alert(data.success);
+                        alert(data.message || 'Reply added successfully!');
                         window.location.reload(); // Reload the page to show the new reply
                     } else {
-                        alert(data.error);
+                        alert(data.error || 'Failed to submit reply.');
                     }
                 })
                 .catch(error => {
@@ -426,8 +428,8 @@ if (!$result) {
                             Posted on <?php echo date("F j, Y, g:i A", strtotime($row['created_at'])); ?>
                         </div>
 
-                        <!-- Move Comment Button Below the Date -->
-                        <div class="post-actions mt-2">
+                        <!-- Move Comment Button Below the Date and Align Left -->
+                        <div class="post-actions">
                             <button class="btn btn-primary btn-sm bg-success" data-bs-toggle="modal"
                                 data-bs-target="#commentModal<?php echo $row['post_id']; ?>">
                                 <i class="fas fa-comment"></i> Comment
@@ -496,10 +498,10 @@ if (!$result) {
                                             <?php
                                             // Query to fetch replies for the current comment, joining with the users table to get the username
                                             $replyQuery = "SELECT r.reply_content, u.username AS author, r.created_at 
-                               FROM comment_replies r 
-                               JOIN users u ON r.user_id = u.user_id 
-                               WHERE r.comment_id = ? 
-                               ORDER BY r.created_at ASC";
+                       FROM comment_replies r 
+                       JOIN users u ON r.user_id = u.user_id 
+                       WHERE r.comment_id = ? 
+                       ORDER BY r.created_at ASC";
                                             $replyStmt = $CONN->prepare($replyQuery);
                                             $replyStmt->bind_param('i', $comment['id']);
                                             $replyStmt->execute();

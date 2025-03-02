@@ -2,8 +2,8 @@
 session_start();
 
 // Destroy all session data
-session_unset();
-session_destroy();
+session_unset(); // Unset all session variables
+session_destroy(); // Destroy the session
 
 // Prevent back-button navigation to cached pages
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");

@@ -9,7 +9,7 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
 }
 
 $id = $_GET['id'];
-$stmt = $CONN->prepare("DELETE FROM users WHERE id = ?");
+$stmt = $CONN->prepare("DELETE FROM users WHERE user_id = ?");
 $stmt->bind_param("i", $id);
 
 if ($stmt->execute()) {

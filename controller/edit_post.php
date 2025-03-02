@@ -21,7 +21,16 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
 }
 
 // Include database connection
-require '../../model/connect.php'; // Corrected file path
+$connectPath = __DIR__ . '/../model/connect.php'; // Correct path
+error_log("Attempting to include: " . $connectPath); // Debugging: Log the path
+
+if (!file_exists($connectPath)) {
+    error_log("File not found: " . $connectPath); // Log the missing file
+    echo json_encode(['success' => false, 'error' => 'Database connection file not found.']);
+    exit();
+}
+
+require $connectPath; // Include the database connection file
 
 // Check if database connection is successful
 if (!$CONN) {
@@ -85,11 +94,17 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
 
         if ($stmt->affected_rows > 0) {
-            echo json_encode(['success' => true, 'message' => 'Post updated successfully.']); // Return success as JSON
+            // Debugging: Log the success response
+            error_log("Post updated successfully. Response: " . json_encode(['success' => true, 'message' => 'Post updated successfully.']));
+            echo json_encode(['success' => true, 'message' => 'Post updated successfully.']); // Return success message as JSON
         } else {
+            // Debugging: Log the error response
+            error_log("Failed to update post. Response: " . json_encode(['success' => false, 'error' => 'Failed to update post.']));
             echo json_encode(['success' => false, 'error' => 'Failed to update post.']); // Return error as JSON
         }
     } catch (Exception $e) {
+        // Debugging: Log the exception
+        error_log("Exception occurred: " . $e->getMessage());
         echo json_encode(['success' => false, 'error' => 'An error occurred: ' . $e->getMessage()]); // Return error as JSON
     } finally {
         if (isset($stmt)) {
