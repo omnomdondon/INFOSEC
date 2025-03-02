@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
-    header('Location: ../index.php');
+    echo json_encode(['error' => 'Unauthorized access.']);
     exit;
 }
 
@@ -20,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $role = trim($_POST['role'] ?? '');
+
+    // Debugging: Log the received data
+    error_log("Received data - User ID: $userId, Username: $username, Email: $email, Role: $role");
 
     // Validate input
     if (empty($userId) || empty($username) || empty($email) || empty($role)) {
@@ -43,11 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $updateStmt->bind_param('sssi', $username, $email, $role, $userId);
 
     if ($updateStmt->execute()) {
-        echo json_encode(['success' => ($updateStmt->affected_rows > 0) ? 'Account updated successfully.' : 'No changes made.']);
+        echo json_encode([
+            'success' => true,
+            'message' => ($updateStmt->affected_rows > 0) ? 'Account updated successfully.' : 'No changes made.',
+            'redirect' => '../view/account_management.php' // Add this line
+        ]);
     } else {
         echo json_encode(['error' => 'Failed to update account.']);
     }
-    
+
     $updateStmt->close();
     exit;
 }
@@ -68,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        echo json_encode($result->fetch_assoc());
+        echo json_encode(['success' => true, 'data' => $result->fetch_assoc()]);
     } else {
         echo json_encode(['error' => 'User not found.']);
     }

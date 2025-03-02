@@ -142,23 +142,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- Password Confirmation Modal -->
-    <div class="modal fade" id="passwordConfirmModal" tabindex="-1" aria-labelledby="passwordConfirmModalLabel" aria-hidden="true">
+    <div class="modal fade" id="passwordConfirmationModal" tabindex="-1" aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="passwordConfirmModalLabel">Confirm Password</h5>
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title text-white" id="passwordConfirmationModalLabel">Confirm Password</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="passwordConfirmForm">
-                        <div class="mb-3 password-input-container">
-                            <label for="adminPassword" class="form-label">Enter Your Password</label>
-                            <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
-                            <button type="button" class="password-toggle" id="togglePassword">
-                                <i class="fas fa-eye"></i> <!-- Eye icon from Font Awesome -->
-                            </button>
+                    <form id="passwordConfirmationForm">
+                        <input type="hidden" id="actionType" name="actionType" value="create_post">
+                        <input type="hidden" id="actionData" name="actionData" value="">
+                        <div class="mb-3">
+                            <label for="adminPassword" class="form-label">Enter your password to continue:</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
+                                <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                    <i class="fas fa-eye"></i> <!-- Font Awesome eye icon -->
+                                </button>
+                            </div>
                         </div>
-                        <div id="passwordError" class="text-danger mb-3"></div>
+                        <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
                         <button type="submit" class="btn btn-success">Confirm</button>
                     </form>
                 </div>
@@ -169,62 +173,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const passwordInput = document.getElementById('adminPassword');
-            const icon = this.querySelector('i');
+        const togglePassword = document.getElementById('togglePassword');
+        const adminPassword = document.getElementById('adminPassword');
 
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
+        if (togglePassword && adminPassword) {
+            togglePassword.addEventListener('click', function() {
+                const type = adminPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+                adminPassword.setAttribute('type', type);
+
+                const eyeIcon = togglePassword.querySelector('i');
+                if (type === 'password') {
+                    eyeIcon.classList.remove('fa-eye-slash');
+                    eyeIcon.classList.add('fa-eye');
+                } else {
+                    eyeIcon.classList.remove('fa-eye');
+                    eyeIcon.classList.add('fa-eye-slash');
+                }
+            });
+        }
+
+        // Clear password field and reset the toggle button when modal is closed
+        const passwordConfirmationModal = document.getElementById('passwordConfirmationModal');
+        passwordConfirmationModal.addEventListener('hidden.bs.modal', function() {
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+
+            const eyeIcon = document.querySelector('#togglePassword i');
+            eyeIcon.classList.remove('fa-eye-slash');
+            eyeIcon.classList.add('fa-eye');
+            document.getElementById('adminPassword').setAttribute('type', 'password');
         });
 
-        // Show password confirmation modal
-        document.getElementById('createPostButton').addEventListener('click', function() {
-            const passwordModal = new bootstrap.Modal(document.getElementById('passwordConfirmModal'));
+        // Function to confirm password and perform actions
+        function confirmPasswordBeforeAction(action, data) {
+            document.getElementById('actionType').value = action;
+            document.getElementById('actionData').value = JSON.stringify(data);
+            const passwordModal = new bootstrap.Modal(document.getElementById('passwordConfirmationModal'));
             passwordModal.show();
+        }
+
+        // Handle Create Post button click
+        document.getElementById('createPostButton').addEventListener('click', function() {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+
+            // Validate title and content
+            if (!title || !content) {
+                alert('Please fill out both the title and content fields.');
+                return; // Stop further execution
+            }
+
+            confirmPasswordBeforeAction('create_post', {}); // Open the password confirmation modal
         });
 
         // Handle password confirmation form submission
-        document.getElementById('passwordConfirmForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form submission
+        document.addEventListener("DOMContentLoaded", function() {
+            const passwordConfirmationForm = document.getElementById('passwordConfirmationForm');
 
-            const adminPassword = document.getElementById('adminPassword').value;
-            const passwordError = document.getElementById('passwordError');
+            if (passwordConfirmationForm) {
+                passwordConfirmationForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
 
-            // Send password to server for validation
-            fetch('../../controller/admin_confirm_password.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `adminPassword=${encodeURIComponent(adminPassword)}`,
-                })
-                .then(response => {
-                    console.log(response); // Log the response for debugging
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json(); // Parse the response as JSON
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Password confirmed, submit the post form
-                        submitPostForm();
-                    } else {
-                        // Show error message
-                        passwordError.textContent = data.error || 'Incorrect password.';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    passwordError.textContent = 'An error occurred. Please try again.';
+                    const adminPassword = document.getElementById('adminPassword').value;
+                    const actionType = document.getElementById('actionType').value;
+                    const actionData = JSON.parse(document.getElementById('actionData').value);
+
+                    fetch('../../controller/admin_confirm_password.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `adminPassword=${encodeURIComponent(adminPassword)}`
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const passwordModalElement = document.getElementById('passwordConfirmationModal');
+                                const passwordModal = bootstrap.Modal.getInstance(passwordModalElement);
+                                if (passwordModal) {
+                                    passwordModal.hide();
+                                }
+
+                                if (actionType === 'create_post') {
+                                    submitPostForm(); // Submit the post form after password confirmation
+                                }
+                            } else {
+                                document.getElementById('passwordError').style.display = 'block';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Failed to confirm password.');
+                        });
                 });
+            } else {
+                console.error("passwordConfirmationForm not found in the DOM");
+            }
         });
 
         // Function to submit the post form

@@ -8,8 +8,8 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
     exit;
 }
 
-// Fetch all users from the database
-$query = "SELECT user_id, username, email, role, created_at FROM users"; // Added role before created_at
+// Fetch all users from the database with a limit of 5 rows
+$query = "SELECT user_id, username, email, role, created_at FROM users ORDER BY created_at ASC LIMIT 5";
 $result = $CONN->query($query);
 ?>
 
@@ -24,12 +24,95 @@ $result = $CONN->query($query);
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
+        /* General Styling */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        p {
+            color: #666;
+        }
+
+        /* Scrollable table container */
+        .scrollable-table {
+            max-height: 300px;
+            /* Adjust the height as needed */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+            border: 1px solid #dee2e6;
+            /* Optional: Add a border */
+            border-radius: 8px;
+            /* Optional: Add rounded corners */
+            margin-bottom: 20px;
+            /* Optional: Add some spacing */
+        }
+
+        /* Sticky table header */
+        .table thead th {
+            position: sticky;
+            top: 0;
+            /* Stick to the top of the scrollable container */
+            background-color: #198754;
+            /* Match the header background color */
+            color: #fff;
+            /* Match the header text color */
+            z-index: 1;
+            /* Ensure the header stays above the table rows */
+        }
+
+        /* Table Styling */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Modal Styling */
+        .modal-header {
+            color: #fff;
+        }
+
+        .modal-title {
+            font-weight: bold;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #dee2e6;
+        }
+
+        /* Password Strength Checker */
         .progress-container {
             position: relative;
             display: flex;
             align-items: center;
             gap: 10px;
-            /* Adjust the gap between the progress bar and the tooltip icon */
         }
 
         #password-strength-bar {
@@ -38,54 +121,10 @@ $result = $CONN->query($query);
 
         #tooltipIcon {
             position: static;
-            /* Change from absolute to static */
             transform: none;
-            /* Remove the transform */
             transition: none;
-            /* Remove the transition */
         }
     </style>
-
-    <script>
-        let timeout;
-
-        function startTimer() {
-            clearTimeout(timeout);
-            timeout = setTimeout(logoutUser, 300000); // 5 minutes (300000ms) timeout
-        }
-
-        function logoutUser() {
-            alert("Session expired due to inactivity. Redirecting to login page.");
-            window.location.href = "../../controller/dashboard_logout.php";
-        }
-
-        // Logout Confirmation Modal Handling
-        document.addEventListener("DOMContentLoaded", function() {
-            const logoutModal = document.getElementById('logoutConfirmationModal');
-            const logoutLink = document.querySelector('a[data-bs-target="#logoutConfirmationModal"]');
-
-            logoutLink.addEventListener('click', function(e) {
-                e.preventDefault(); // Prevent default link behavior
-                const modal = new bootstrap.Modal(logoutModal);
-                modal.show();
-            });
-
-            // Handle the logout button click inside the modal
-            const logoutButton = document.querySelector('#logoutConfirmationModal .btn-danger');
-            logoutButton.addEventListener('click', function() {
-                window.location.href = '../../controller/dashboard_logout.php'; // Redirect to logout page
-            });
-        });
-
-        // Reset timer on user activity
-        document.addEventListener("mousemove", startTimer);
-        document.addEventListener("keydown", startTimer);
-        document.addEventListener("mousedown", startTimer); // Detects clicks
-        document.addEventListener("wheel", startTimer); // Detects scrolling
-        document.addEventListener("touchstart", startTimer); // Detects mobile touch
-
-        startTimer(); // Initialize timer on page load
-    </script>
 </head>
 
 <body>
@@ -122,50 +161,52 @@ $result = $CONN->query($query);
 
     <div class="container mt-5">
         <h2 class="text-center">Account Management</h2>
-        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#passwordConfirmationModal">Create New Account</button>
+        <!-- Create Account Button -->
+        <button class="btn btn-success mb-3" onclick="confirmPasswordBeforeAction('create_account', {})">Create New Account</button>
 
         <!-- User Table -->
-        <table class="table table-bordered table-striped mt-4">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Role</th> <!-- Added Role column -->
-                    <th>Created At</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                if ($result->num_rows > 0) {
-                    while ($user = $result->fetch_assoc()) {
-                        echo "<tr>";
-                        echo "<td>" . htmlspecialchars($user['user_id']) . "</td>";
-                        echo "<td>" . htmlspecialchars($user['username']) . "</td>";
-                        echo "<td>" . htmlspecialchars($user['email']) . "</td>";
-                        echo "<td>" . htmlspecialchars($user['role']) . "</td>"; // Display role
-                        echo "<td>" . htmlspecialchars($user['created_at']) . "</td>"; // Display created_at
-                        echo "<td>
-                            <button class='btn btn-warning btn-sm' onclick='openEditModal(" . $user['user_id'] . ")'>Edit</button>
-                            <button class='btn btn-danger btn-sm' onclick='openDeleteModal(" . $user['user_id'] . ")'>Delete</button>
-                        </td>";
-
-                        echo "</tr>";
+        <div class="scrollable-table">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    if ($result->num_rows > 0) {
+                        while ($user = $result->fetch_assoc()) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($user['user_id']) . "</td>";
+                            echo "<td>" . htmlspecialchars($user['username']) . "</td>";
+                            echo "<td>" . htmlspecialchars($user['email']) . "</td>";
+                            echo "<td>" . htmlspecialchars($user['role']) . "</td>";
+                            echo "<td>" . htmlspecialchars($user['created_at']) . "</td>";
+                            echo "<td>
+                                <button class='btn btn-warning btn-sm' onclick=\"confirmPasswordBeforeAction('edit_account', { userId: " . $user['user_id'] . " })\">Edit</button>
+                                <button class='btn btn-danger btn-sm' onclick=\"confirmPasswordBeforeAction('delete_account', { userId: " . $user['user_id'] . " })\">Delete</button>
+                            </td>";
+                            echo "</tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='6' class='text-center'>No users found</td></tr>";
                     }
-                } else {
-                    echo "<tr><td colspan='6' class='text-center'>No users found</td></tr>";
-                }
-                ?>
-            </tbody>
-        </table>
+                    ?>
+                </tbody>
+            </table>
+        </div>
 
         <!-- Edit User Modal -->
         <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editUserModalLabel">Edit Account</h5>
+                    <div class="modal-header bg-success">
+                        <h5 class="modal-title text-white" id="editUserModalLabel">Edit Account</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -186,7 +227,7 @@ $result = $CONN->query($query);
                                     <option value="user">User</option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="submit" class="btn btn-success">Save Changes</button>
                         </form>
                     </div>
                 </div>
@@ -223,8 +264,8 @@ $result = $CONN->query($query);
                                 <label for="password" class="form-label">Password</label>
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="password" name="password" required>
-                                    <button type="button" class="btn btn-outline-secondary" id="togglePassword">
-                                        <i id="togglePasswordIcon" class="bi bi-eye"></i>
+                                    <button type="button" class="btn btn-outline-secondary" id="toggleCreatePassword">
+                                        <i id="toggleCreatePasswordIcon" class="bi bi-eye"></i>
                                     </button>
                                 </div>
                                 <!-- Password Strength Indicator -->
@@ -259,7 +300,6 @@ $result = $CONN->query($query);
                 </div>
             </div>
         </div>
-
     </div>
 
     <!-- Logout Confirmation Modal -->
@@ -267,7 +307,7 @@ $result = $CONN->query($query);
         aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header bg-success">
                     <h5 class="modal-title" id="logoutConfirmationModalLabel">Confirm Logout</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -282,66 +322,29 @@ $result = $CONN->query($query);
         </div>
     </div>
 
-    <!-- Edit Password Confirmation Modal -->
-    <div class="modal fade" id="editPasswordConfirmationModal" tabindex="-1" aria-labelledby="editPasswordConfirmationModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editPasswordConfirmationModalLabel">Confirm Password</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editPasswordConfirmationForm">
-                        <div class="mb-3">
-                            <label for="editAdminPassword" class="form-label">Admin Password</label>
-                            <input type="password" class="form-control" id="editAdminPassword" required>
-                        </div>
-                        <div id="editPasswordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
-                        <button type="submit" class="btn btn-primary">Confirm</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Password Confirmation Modal -->
     <div class="modal fade" id="passwordConfirmationModal" tabindex="-1" aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="passwordConfirmationModalLabel">Confirm Password</h5>
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title text-white" id="passwordConfirmationModalLabel">Confirm Password</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="passwordConfirmationForm">
+                        <input type="hidden" id="actionType" name="actionType" value="">
+                        <input type="hidden" id="actionData" name="actionData" value="">
                         <div class="mb-3">
-                            <label for="adminPassword" class="form-label">Admin Password</label>
-                            <input type="password" class="form-control" id="adminPassword" required>
+                            <label for="adminPassword" class="form-label">Enter your password to continue:</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
+                                <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
-                        <button type="submit" class="btn btn-primary">Confirm</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delete Password Confirmation Modal -->
-    <div class="modal fade" id="deletePasswordConfirmationModal" tabindex="-1" aria-labelledby="deletePasswordConfirmationModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deletePasswordConfirmationModalLabel">Confirm Password</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="deletePasswordConfirmationForm">
-                        <div class="mb-3">
-                            <label for="deleteAdminPassword" class="form-label">Admin Password</label>
-                            <input type="password" class="form-control" id="deleteAdminPassword" required>
-                        </div>
-                        <div id="deletePasswordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
-                        <button type="submit" class="btn btn-primary">Confirm</button>
+                        <button type="submit" class="btn btn-success">Confirm</button>
                     </form>
                 </div>
             </div>
@@ -352,8 +355,8 @@ $result = $CONN->query($query);
     <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Deletion</h5>
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title text-white" id="deleteConfirmationModalLabel">Confirm Deletion</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -368,49 +371,76 @@ $result = $CONN->query($query);
     </div>
 
     <script>
+        let userIdToDelete = null; // Store the user ID to delete
+        let userIdToEdit = null; // Store the user ID to edit
+
+        // Function to confirm password before performing an action
+        function confirmPasswordBeforeAction(action, data) {
+            const actionTypeElement = document.getElementById('actionType');
+            const actionDataElement = document.getElementById('actionData');
+            const passwordModalElement = document.getElementById('passwordConfirmationModal');
+
+            if (!actionTypeElement || !actionDataElement || !passwordModalElement) {
+                console.error("Required elements not found!");
+                return;
+            }
+
+            actionTypeElement.value = action;
+            actionDataElement.value = JSON.stringify(data);
+
+            // Set userIdToDelete if the action is delete_account
+            if (action === 'delete_account') {
+                userIdToDelete = data.userId;
+            }
+
+            const passwordModal = new bootstrap.Modal(passwordModalElement);
+            passwordModal.show();
+        }
+
+        // DOMContentLoaded event listener
         document.addEventListener("DOMContentLoaded", function() {
+            // Password Strength Checker
             const passwordInput = document.getElementById("password");
             const passwordStrengthText = document.getElementById("password-strength-text");
             const passwordStrengthProgress = document.getElementById("password-strength-progress");
             const tooltipIcon = document.getElementById("tooltipIcon");
 
-            // Password Strength Checker
-            passwordInput.addEventListener("input", function() {
-                const password = passwordInput.value;
+            if (passwordInput) {
+                passwordInput.addEventListener("input", function() {
+                    const password = passwordInput.value;
 
-                // Define password requirements
-                const minLength = 12;
-                const hasUppercase = /[A-Z]/.test(password);
-                const hasLowercase = /[a-z]/.test(password);
-                const hasNumber = /[0-9]/.test(password);
-                const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+                    // Define password requirements
+                    const minLength = 12;
+                    const hasUppercase = /[A-Z]/.test(password);
+                    const hasLowercase = /[a-z]/.test(password);
+                    const hasNumber = /[0-9]/.test(password);
+                    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-                // Calculate password strength
-                let strength = 0;
-                if (password.length >= minLength) strength += 20;
-                if (hasUppercase) strength += 20;
-                if (hasLowercase) strength += 20;
-                if (hasNumber) strength += 20;
-                if (hasSpecial) strength += 20;
+                    // Calculate password strength
+                    let strength = 0;
+                    if (password.length >= minLength) strength += 20;
+                    if (hasUppercase) strength += 20;
+                    if (hasLowercase) strength += 20;
+                    if (hasNumber) strength += 20;
+                    if (hasSpecial) strength += 20;
 
-                // Update progress bar and text
-                passwordStrengthProgress.style.width = `${strength}%`;
-                if (strength < 40) {
-                    passwordStrengthProgress.classList.remove("bg-success", "bg-warning");
-                    passwordStrengthProgress.classList.add("bg-danger");
-                    passwordStrengthText.textContent = "Weak";
-                } else if (strength < 80) {
-                    passwordStrengthProgress.classList.remove("bg-danger", "bg-success");
-                    passwordStrengthProgress.classList.add("bg-warning");
-                    passwordStrengthText.textContent = "Moderate";
-                } else {
-                    passwordStrengthProgress.classList.remove("bg-danger", "bg-warning");
-                    passwordStrengthProgress.classList.add("bg-success");
-                    passwordStrengthText.textContent = "Strong";
-                }
-
-                // No need to move the tooltip icon as it is now part of the flex container
-            });
+                    // Update progress bar and text
+                    passwordStrengthProgress.style.width = `${strength}%`;
+                    if (strength < 40) {
+                        passwordStrengthProgress.classList.remove("bg-success", "bg-warning");
+                        passwordStrengthProgress.classList.add("bg-danger");
+                        passwordStrengthText.textContent = "Weak";
+                    } else if (strength < 80) {
+                        passwordStrengthProgress.classList.remove("bg-danger", "bg-success");
+                        passwordStrengthProgress.classList.add("bg-warning");
+                        passwordStrengthText.textContent = "Moderate";
+                    } else {
+                        passwordStrengthProgress.classList.remove("bg-danger", "bg-warning");
+                        passwordStrengthProgress.classList.add("bg-success");
+                        passwordStrengthText.textContent = "Strong";
+                    }
+                });
+            }
 
             // Initialize Bootstrap Tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -418,277 +448,231 @@ $result = $CONN->query($query);
                 new bootstrap.Tooltip(tooltipTriggerEl);
             });
 
-            // Toggle Password Visibility for Password Field
-            document.getElementById("togglePassword").addEventListener("click", function() {
-                const passwordField = document.getElementById("password");
-                const icon = document.getElementById("togglePasswordIcon");
-                if (passwordField.type === "password") {
-                    passwordField.type = "text";
-                    icon.classList.replace("bi-eye", "bi-eye-slash");
-                } else {
-                    passwordField.type = "password";
-                    icon.classList.replace("bi-eye-slash", "bi-eye");
-                }
-            });
+            // Toggle Password Visibility for Create Account Modal
+            const toggleCreatePassword = document.getElementById("toggleCreatePassword");
+            const createPasswordField = document.getElementById("password");
+
+            if (toggleCreatePassword && createPasswordField) {
+                toggleCreatePassword.addEventListener("click", function() {
+                    const type = createPasswordField.getAttribute("type") === "password" ? "text" : "password";
+                    createPasswordField.setAttribute("type", type);
+
+                    const eyeIcon = toggleCreatePassword.querySelector("i");
+                    if (type === "password") {
+                        eyeIcon.classList.replace("bi-eye-slash", "bi-eye");
+                    } else {
+                        eyeIcon.classList.replace("bi-eye", "bi-eye-slash");
+                    }
+                });
+            }
+
+            // Toggle Password Visibility for Password Confirmation Modal
+            const togglePassword = document.getElementById("togglePassword");
+            const adminPasswordField = document.getElementById("adminPassword");
+
+            if (togglePassword && adminPasswordField) {
+                togglePassword.addEventListener("click", function() {
+                    const type = adminPasswordField.getAttribute("type") === "password" ? "text" : "password";
+                    adminPasswordField.setAttribute("type", type);
+
+                    const eyeIcon = togglePassword.querySelector("i");
+                    if (type === "password") {
+                        eyeIcon.classList.replace("bi-eye-slash", "bi-eye");
+                    } else {
+                        eyeIcon.classList.replace("bi-eye", "bi-eye-slash");
+                    }
+                });
+            }
 
             // Toggle Password Visibility for Confirm Password Field
-            document.getElementById("toggleConfirmPassword").addEventListener("click", function() {
-                const confirmPasswordField = document.getElementById("confirm_password");
-                const icon = document.getElementById("toggleConfirmPasswordIcon");
-                if (confirmPasswordField.type === "password") {
-                    confirmPasswordField.type = "text";
-                    icon.classList.replace("bi-eye", "bi-eye-slash");
-                } else {
-                    confirmPasswordField.type = "password";
-                    icon.classList.replace("bi-eye-slash", "bi-eye");
-                }
-            });
+            const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
+            const confirmPasswordField = document.getElementById("confirm_password");
+
+            if (toggleConfirmPassword && confirmPasswordField) {
+                toggleConfirmPassword.addEventListener("click", function() {
+                    const type = confirmPasswordField.getAttribute("type") === "password" ? "text" : "password";
+                    confirmPasswordField.setAttribute("type", type);
+
+                    const eyeIcon = toggleConfirmPassword.querySelector("i");
+                    if (type === "password") {
+                        eyeIcon.classList.replace("bi-eye-slash", "bi-eye");
+                    } else {
+                        eyeIcon.classList.replace("bi-eye", "bi-eye-slash");
+                    }
+                });
+            }
 
             // Password Confirmation Form Handling
             const passwordConfirmationForm = document.getElementById('passwordConfirmationForm');
             const passwordError = document.getElementById('passwordError');
             const adminPasswordInput = document.getElementById('adminPassword');
             const passwordConfirmationModal = new bootstrap.Modal(document.getElementById('passwordConfirmationModal'));
-            const signupModal = new bootstrap.Modal(document.getElementById('signupModal'));
 
-            passwordConfirmationForm.addEventListener('submit', function(e) {
-                e.preventDefault();
+            if (passwordConfirmationForm) {
+                passwordConfirmationForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
 
-                const adminPassword = adminPasswordInput.value;
+                    const adminPassword = adminPasswordInput.value;
 
-                fetch('../../controller/admin_confirm_password.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `adminPassword=${encodeURIComponent(adminPassword)}`,
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            passwordError.style.display = 'none';
-                            passwordConfirmationModal.hide();
-                            signupModal.show();
-                        } else {
-                            passwordError.style.display = 'block';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-            });
+                    fetch('../../controller/admin_confirm_password.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: `adminPassword=${encodeURIComponent(adminPassword)}`,
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                passwordError.style.display = 'none';
+                                passwordConfirmationModal.hide(); // Close the password confirmation modal
+
+                                // Perform the action based on the actionType
+                                const actionType = document.getElementById('actionType').value;
+                                const actionData = JSON.parse(document.getElementById('actionData').value);
+
+                                if (actionType === 'create_account') {
+                                    const signupModal = new bootstrap.Modal(document.getElementById('signupModal'));
+                                    signupModal.show(); // Open the Create Account Modal
+                                } else if (actionType === 'edit_account') {
+                                    fetch(`../../controller/edit_account.php?id=${actionData.userId}`)
+                                        .then(response => response.json())
+                                        .then(userData => {
+                                            if (userData.error) {
+                                                alert(userData.error);
+                                            } else if (userData.success && userData.data) {
+                                                // Populate the Edit Account Modal with user data
+                                                document.getElementById('edit_user_id').value = userData.data.user_id;
+                                                document.getElementById('edit_username').value = userData.data.username;
+                                                document.getElementById('edit_email').value = userData.data.email;
+                                                document.getElementById('edit_role').value = userData.data.role;
+
+                                                // Open the Edit Account Modal
+                                                const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                                                editUserModal.show();
+                                            } else {
+                                                alert("Failed to fetch user data.");
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error:', error);
+                                            alert("An error occurred while fetching user data.");
+                                        });
+                                } else if (actionType === 'delete_account') {
+                                    const deleteConfirmationModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
+                                    deleteConfirmationModal.show(); // Open the Delete Confirmation Modal
+                                }
+                            } else {
+                                passwordError.style.display = 'block'; // Show error if password is incorrect
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                });
+            }
 
             // Clear the password field and error message when the modal is hidden
             document.getElementById('passwordConfirmationModal').addEventListener('hidden.bs.modal', function() {
                 adminPasswordInput.value = '';
                 passwordError.style.display = 'none';
-            });
-        });
 
-        document.addEventListener("DOMContentLoaded", function() {
+                const eyeIcon = document.querySelector('#togglePassword i');
+                if (eyeIcon) {
+                    eyeIcon.classList.replace("bi-eye-slash", "bi-eye");
+                }
+                if (adminPasswordField) {
+                    adminPasswordField.setAttribute("type", "password");
+                }
+            });
+
             // Handle Create Account Form Submission
             const createAccountForm = document.getElementById('createAccountForm');
 
-            createAccountForm.addEventListener('submit', function(e) {
-                e.preventDefault(); // Prevent default form submission
+            if (createAccountForm) {
+                createAccountForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Prevent default form submission
 
-                // Create FormData object
-                const formData = new FormData(createAccountForm);
+                    // Create FormData object
+                    const formData = new FormData(createAccountForm);
 
-                // Send form data to the server using fetch
-                fetch('../../controller/admin_register.php', { // Updated path to admin_register.php
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json()) // Parse the JSON response
-                    .then(data => {
-                        if (data.success) {
-                            // Show success alert
-                            alert(data.message);
-
-                            // Redirect to the specified URL
-                            if (data.redirect) {
-                                window.location.href = data.redirect;
+                    // Send form data to the server using fetch
+                    fetch('../../controller/admin_register.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message);
+                                if (data.redirect) {
+                                    window.location.href = data.redirect;
+                                } else {
+                                    window.location.reload();
+                                }
                             } else {
-                                window.location.reload(); // Default behavior: refresh the page
+                                alert(data.message);
                             }
-                        } else {
-                            // Show error message
-                            alert(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert("An error occurred while creating the account.");
-                    });
-            });
-        });
-
-        document.addEventListener("DOMContentLoaded", function() {
-            // Handle Edit Password Confirmation Form Submission
-            const editPasswordConfirmationForm = document.getElementById('editPasswordConfirmationForm');
-            const editPasswordError = document.getElementById('editPasswordError');
-            const editAdminPasswordInput = document.getElementById('editAdminPassword');
-            const editPasswordConfirmationModal = new bootstrap.Modal(document.getElementById('editPasswordConfirmationModal'));
-            const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-
-            let userIdToEdit = null; // Store the user ID to edit
-
-            // Function to open the Edit Password Confirmation Modal
-            window.openEditModal = function(userId) {
-                userIdToEdit = userId; // Store the user ID
-                editPasswordConfirmationModal.show();
-            };
-
-            // Handle Edit Password Confirmation Form Submission
-            editPasswordConfirmationForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const adminPassword = editAdminPasswordInput.value;
-
-                fetch('../../controller/admin_confirm_password.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `adminPassword=${encodeURIComponent(adminPassword)}`,
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            editPasswordError.style.display = 'none';
-                            editPasswordConfirmationModal.hide();
-
-                            // Fetch user data and open the Edit Account Modal
-                            fetch(`../../controller/edit_account.php?id=${userIdToEdit}`)
-                                .then(response => response.json())
-                                .then(userData => {
-                                    if (userData.error) {
-                                        alert(userData.error);
-                                    } else {
-                                        // Populate the Edit Account Modal with user data
-                                        document.getElementById('edit_user_id').value = userData.user_id;
-                                        document.getElementById('edit_username').value = userData.username;
-                                        document.getElementById('edit_email').value = userData.email;
-                                        document.getElementById('edit_role').value = userData.role;
-
-                                        // Open the Edit Account Modal
-                                        editUserModal.show();
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Error:', error);
-                                    alert("An error occurred while fetching user data.");
-                                });
-                        } else {
-                            editPasswordError.style.display = 'block';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-            });
-
-            // Clear the password field and error message when the modal is hidden
-            document.getElementById('editPasswordConfirmationModal').addEventListener('hidden.bs.modal', function() {
-                editAdminPasswordInput.value = '';
-                editPasswordError.style.display = 'none';
-            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert("An error occurred while creating the account.");
+                        });
+                });
+            }
 
             // Handle Edit Account Form Submission
             const editUserForm = document.getElementById('editUserForm');
 
-            editUserForm.addEventListener('submit', function(e) {
-                e.preventDefault(); // Prevent default form submission
+            if (editUserForm) {
+                editUserForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Prevent default form submission
 
-                // Create FormData object
-                const formData = new FormData(editUserForm);
+                    // Create FormData object
+                    const formData = new FormData(editUserForm);
 
-                // Send form data to the server using fetch
-                fetch('../../controller/edit_account.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json()) // Parse the JSON response
-                    .then(data => {
-                        if (data.success) {
-                            // Show success alert
-                            alert(data.success);
-
-                            // Refresh the page to reflect changes
-                            window.location.reload();
-                        } else {
-                            // Show error message
-                            alert(data.error);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert("An error occurred while updating the account.");
-                    });
-            });
-        });
-
-        document.addEventListener("DOMContentLoaded", function() {
-            const deletePasswordConfirmationForm = document.getElementById('deletePasswordConfirmationForm');
-            const deletePasswordError = document.getElementById('deletePasswordError');
-            const deleteAdminPasswordInput = document.getElementById('deleteAdminPassword');
-            const deletePasswordConfirmationModal = new bootstrap.Modal(document.getElementById('deletePasswordConfirmationModal'));
-            const deleteConfirmationModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
-
-            let userIdToDelete = null; // Store the user ID to delete
-
-            // Function to open the Delete Password Confirmation Modal
-            window.openDeleteModal = function(userId) {
-                userIdToDelete = userId; // Store the user ID
-                deletePasswordConfirmationModal.show();
-            };
-
-            // Handle Delete Password Confirmation Form Submission
-            deletePasswordConfirmationForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const adminPassword = deleteAdminPasswordInput.value;
-
-                fetch('../../controller/admin_confirm_password.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `adminPassword=${encodeURIComponent(adminPassword)}`,
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            deletePasswordError.style.display = 'none';
-                            deletePasswordConfirmationModal.hide();
-
-                            // Show the Delete Confirmation Modal
-                            deleteConfirmationModal.show();
-                        } else {
-                            deletePasswordError.style.display = 'block';
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-            });
+                    // Send form data to the server using fetch
+                    fetch('../../controller/edit_account.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message || "Account updated successfully!");
+                                if (data.redirect) {
+                                    window.location.href = data.redirect; // Redirect if redirect URL is provided
+                                } else {
+                                    window.location.reload(); // Fallback to reload the page
+                                }
+                            } else {
+                                alert(data.error || "An error occurred while updating the account.");
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert("An error occurred while updating the account.");
+                        });
+                });
+            }
 
             // Handle the Delete Confirmation Button Click
             document.getElementById('confirmDeleteButton').addEventListener('click', function() {
-                // Proceed to delete the account
+                if (!userIdToDelete) {
+                    alert("No user selected for deletion.");
+                    return;
+                }
+
                 fetch(`../../controller/delete_account.php?id=${userIdToDelete}`, {
                         method: 'GET'
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            // Show success message and refresh the page
-                            alert(data.message);
+                            alert(data.message || "Account deleted successfully!");
                             window.location.reload();
                         } else {
-                            // Show error message
-                            alert(data.message);
+                            alert(data.message || "Failed to delete account.");
                         }
                     })
                     .catch(error => {
@@ -697,17 +681,11 @@ $result = $CONN->query($query);
                     });
 
                 // Hide the Delete Confirmation Modal
+                const deleteConfirmationModal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
                 deleteConfirmationModal.hide();
-            });
-
-            // Clear the password field and error message when the modal is hidden
-            document.getElementById('deletePasswordConfirmationModal').addEventListener('hidden.bs.modal', function() {
-                deleteAdminPasswordInput.value = '';
-                deletePasswordError.style.display = 'none';
             });
         });
     </script>
-
 </body>
 
 </html>

@@ -16,6 +16,9 @@ if (!isset($_GET['id'])) {
 
 $id = $_GET['id'];
 
+// Debugging: Log the received ID
+error_log("Received ID for deletion: " . $id);
+
 // Prepare the SQL query
 $query = "DELETE FROM users WHERE user_id = ?";
 $stmt = $CONN->prepare($query);
