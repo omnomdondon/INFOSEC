@@ -149,7 +149,7 @@
             <!-- Developer 3 -->
             <div class="col-md-3 col-sm-6 mb-4">
                 <div class="developer-card">
-                    <img src="developer3.jpg" alt="Developer 3" class="developer-image">
+                    <img src="../../assets/images/developers/garcia.jpg" alt="Developer 3" class="developer-image">
                     <div class="developer-name">Axcel Bryan Garcia</div>
                     <div class="developer-details">INF225<br>BSIT - Web and Mobile Applications</div>
                 </div>
