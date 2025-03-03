@@ -8,49 +8,87 @@
     <link href="../../bootstrap/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
+        /* General Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        /* Contact Section Styling */
         .contact-section {
             margin-top: 50px;
-            padding: 20px;
+            padding: 40px 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .contact-title {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             margin-bottom: 20px;
+            color: #198754;
         }
 
         .contact-form {
             margin-top: 30px;
         }
 
-        .form-control {
-            margin-bottom: 10px;
-        }
-
-        /* Style to match login form structure */
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
+        .form-control {
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+        }
+
+        .form-control:focus {
+            border-color: #198754;
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+        }
+
+        .btn-success {
+            background-color: #198754;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .btn-success:hover {
+            background-color: #157347;
+        }
+
+        /* Social Media Section Styling */
         .contact-social {
-            margin-top: 30px;
+            margin-top: 40px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
         }
 
         .contact-social h3 {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: bold;
+            margin-bottom: 20px;
+            color: #198754;
         }
 
         .social-item {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            color: #555;
         }
 
         .social-item i {
             margin-right: 10px;
+            color: #198754;
         }
 
         .social-link {
-            color: #007bff;
+            color: #198754;
             text-decoration: none;
         }
 
@@ -105,8 +143,7 @@
                 <!-- Description Field -->
                 <div class="form-group">
                     <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" id="description" rows="4" placeholder="Your Message"
-                        required></textarea>
+                    <textarea class="form-control" id="description" rows="4" placeholder="Your Message" required></textarea>
                 </div>
                 <!-- Submit Button -->
                 <div class="d-grid">
@@ -116,7 +153,7 @@
         </div>
 
         <!-- Social Media Contact -->
-        <div class="contact-social mt-5">
+        <div class="contact-social">
             <h3>Social Media</h3>
             <p class="social-item"><i class="fas fa-envelope"></i> Email: <a class="social-link"
                     href="mailto:brandon1203kennethdc@gmail.com">brandon1203kennethdc@gmail.com</a></p>
