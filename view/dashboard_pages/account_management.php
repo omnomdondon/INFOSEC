@@ -162,7 +162,8 @@ $result = $CONN->query($query);
     <div class="container mt-5">
         <h2 class="text-center">Account Management</h2>
         <!-- Create Account Button -->
-        <button class="btn btn-success mb-3" onclick="confirmPasswordBeforeAction('create_account', {})">Create New Account</button>
+        <button class="btn btn-success mb-3" onclick="confirmPasswordBeforeAction('create_account', {})">Create New
+            Account</button>
 
         <!-- User Table -->
         <div class="scrollable-table">
@@ -202,7 +203,8 @@ $result = $CONN->query($query);
         </div>
 
         <!-- Edit User Modal -->
-        <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel"
+            aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header bg-success">
@@ -323,7 +325,8 @@ $result = $CONN->query($query);
     </div>
 
     <!-- Password Confirmation Modal -->
-    <div class="modal fade" id="passwordConfirmationModal" tabindex="-1" aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
+    <div class="modal fade" id="passwordConfirmationModal" tabindex="-1"
+        aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-success">
@@ -337,13 +340,15 @@ $result = $CONN->query($query);
                         <div class="mb-3">
                             <label for="adminPassword" class="form-label">Enter your password to continue:</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
+                                <input type="password" class="form-control" id="adminPassword" name="adminPassword"
+                                    required>
                                 <button type="button" class="btn btn-outline-secondary" id="togglePassword">
                                     <i class="bi bi-eye"></i>
                                 </button>
                             </div>
                         </div>
-                        <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
+                        <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password.
+                            Please try again.</div>
                         <button type="submit" class="btn btn-success">Confirm</button>
                     </form>
                 </div>
@@ -352,7 +357,8 @@ $result = $CONN->query($query);
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
+    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-success">
@@ -371,6 +377,26 @@ $result = $CONN->query($query);
     </div>
 
     <script>
+        let timeout;
+
+        function startTimer() {
+            clearTimeout(timeout);
+            timeout = setTimeout(logoutUser, 300000); // 5 minutes (300000ms) timeout
+        }
+
+        function logoutUser() {
+            alert("Session expired due to inactivity. Redirecting to login page.");
+            window.location.href = "../../controller/dashboard_logout.php";
+        }
+
+        // Reset timer on user activity
+        document.addEventListener("mousemove", startTimer);
+        document.addEventListener("keydown", startTimer);
+        document.addEventListener("mousedown", startTimer); // Detects clicks
+        document.addEventListener("wheel", startTimer); // Detects scrolling
+        document.addEventListener("touchstart", startTimer); // Detects mobile touch
+
+        startTimer(); // Initialize timer on page load
         let userIdToDelete = null; // Store the user ID to delete
         let userIdToEdit = null; // Store the user ID to edit
 
@@ -398,7 +424,7 @@ $result = $CONN->query($query);
         }
 
         // DOMContentLoaded event listener
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             // Password Strength Checker
             const passwordInput = document.getElementById("password");
             const passwordStrengthText = document.getElementById("password-strength-text");
@@ -406,7 +432,7 @@ $result = $CONN->query($query);
             const tooltipIcon = document.getElementById("tooltipIcon");
 
             if (passwordInput) {
-                passwordInput.addEventListener("input", function() {
+                passwordInput.addEventListener("input", function () {
                     const password = passwordInput.value;
 
                     // Define password requirements
@@ -444,7 +470,7 @@ $result = $CONN->query($query);
 
             // Initialize Bootstrap Tooltips
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
                 new bootstrap.Tooltip(tooltipTriggerEl);
             });
 
@@ -453,7 +479,7 @@ $result = $CONN->query($query);
             const createPasswordField = document.getElementById("password");
 
             if (toggleCreatePassword && createPasswordField) {
-                toggleCreatePassword.addEventListener("click", function() {
+                toggleCreatePassword.addEventListener("click", function () {
                     const type = createPasswordField.getAttribute("type") === "password" ? "text" : "password";
                     createPasswordField.setAttribute("type", type);
 
@@ -471,7 +497,7 @@ $result = $CONN->query($query);
             const adminPasswordField = document.getElementById("adminPassword");
 
             if (togglePassword && adminPasswordField) {
-                togglePassword.addEventListener("click", function() {
+                togglePassword.addEventListener("click", function () {
                     const type = adminPasswordField.getAttribute("type") === "password" ? "text" : "password";
                     adminPasswordField.setAttribute("type", type);
 
@@ -489,7 +515,7 @@ $result = $CONN->query($query);
             const confirmPasswordField = document.getElementById("confirm_password");
 
             if (toggleConfirmPassword && confirmPasswordField) {
-                toggleConfirmPassword.addEventListener("click", function() {
+                toggleConfirmPassword.addEventListener("click", function () {
                     const type = confirmPasswordField.getAttribute("type") === "password" ? "text" : "password";
                     confirmPasswordField.setAttribute("type", type);
 
@@ -509,18 +535,18 @@ $result = $CONN->query($query);
             const passwordConfirmationModal = new bootstrap.Modal(document.getElementById('passwordConfirmationModal'));
 
             if (passwordConfirmationForm) {
-                passwordConfirmationForm.addEventListener('submit', function(e) {
+                passwordConfirmationForm.addEventListener('submit', function (e) {
                     e.preventDefault();
 
                     const adminPassword = adminPasswordInput.value;
 
                     fetch('../../controller/admin_confirm_password.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                            },
-                            body: `adminPassword=${encodeURIComponent(adminPassword)}`,
-                        })
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `adminPassword=${encodeURIComponent(adminPassword)}`,
+                    })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -573,7 +599,7 @@ $result = $CONN->query($query);
             }
 
             // Clear the password field and error message when the modal is hidden
-            document.getElementById('passwordConfirmationModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('passwordConfirmationModal').addEventListener('hidden.bs.modal', function () {
                 adminPasswordInput.value = '';
                 passwordError.style.display = 'none';
 
@@ -590,7 +616,7 @@ $result = $CONN->query($query);
             const createAccountForm = document.getElementById('createAccountForm');
 
             if (createAccountForm) {
-                createAccountForm.addEventListener('submit', function(e) {
+                createAccountForm.addEventListener('submit', function (e) {
                     e.preventDefault(); // Prevent default form submission
 
                     // Create FormData object
@@ -598,9 +624,9 @@ $result = $CONN->query($query);
 
                     // Send form data to the server using fetch
                     fetch('../../controller/admin_register.php', {
-                            method: 'POST',
-                            body: formData
-                        })
+                        method: 'POST',
+                        body: formData
+                    })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -625,7 +651,7 @@ $result = $CONN->query($query);
             const editUserForm = document.getElementById('editUserForm');
 
             if (editUserForm) {
-                editUserForm.addEventListener('submit', function(e) {
+                editUserForm.addEventListener('submit', function (e) {
                     e.preventDefault(); // Prevent default form submission
 
                     // Create FormData object
@@ -633,9 +659,9 @@ $result = $CONN->query($query);
 
                     // Send form data to the server using fetch
                     fetch('../../controller/edit_account.php', {
-                            method: 'POST',
-                            body: formData
-                        })
+                        method: 'POST',
+                        body: formData
+                    })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -657,15 +683,15 @@ $result = $CONN->query($query);
             }
 
             // Handle the Delete Confirmation Button Click
-            document.getElementById('confirmDeleteButton').addEventListener('click', function() {
+            document.getElementById('confirmDeleteButton').addEventListener('click', function () {
                 if (!userIdToDelete) {
                     alert("No user selected for deletion.");
                     return;
                 }
 
                 fetch(`../../controller/delete_account.php?id=${userIdToDelete}`, {
-                        method: 'GET'
-                    })
+                    method: 'GET'
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {

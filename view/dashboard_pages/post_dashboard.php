@@ -40,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Post</title>
     <link href="../../bootstrap/bootstrap-5.0.2-dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"> <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Font Awesome for icons -->
     <style>
         body {
             background-color: #f8f9fa;
@@ -126,11 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <form id="createPostForm" method="POST" action="post_dashboard.php">
                         <div class="mb-3">
                             <label for="title" class="form-label">Title</label>
-                            <input type="text" class="form-control" id="title" name="title" placeholder="Enter post title" required>
+                            <input type="text" class="form-control" id="title" name="title"
+                                placeholder="Enter post title" required>
                         </div>
                         <div class="mb-3">
                             <label for="content" class="form-label">Content</label>
-                            <textarea class="form-control" id="content" name="content" rows="6" placeholder="Write your post content here..." required></textarea>
+                            <textarea class="form-control" id="content" name="content" rows="6"
+                                placeholder="Write your post content here..." required></textarea>
                         </div>
                         <div class="d-grid">
                             <button type="button" class="btn btn-success" id="createPostButton">Create Post</button>
@@ -142,7 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <!-- Password Confirmation Modal -->
-    <div class="modal fade" id="passwordConfirmationModal" tabindex="-1" aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
+    <div class="modal fade" id="passwordConfirmationModal" tabindex="-1"
+        aria-labelledby="passwordConfirmationModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-success">
@@ -156,13 +160,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="mb-3">
                             <label for="adminPassword" class="form-label">Enter your password to continue:</label>
                             <div class="input-group">
-                                <input type="password" class="form-control" id="adminPassword" name="adminPassword" required>
+                                <input type="password" class="form-control" id="adminPassword" name="adminPassword"
+                                    required>
                                 <button type="button" class="btn btn-outline-secondary" id="togglePassword">
                                     <i class="fas fa-eye"></i> <!-- Font Awesome eye icon -->
                                 </button>
                             </div>
                         </div>
-                        <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password. Please try again.</div>
+                        <div id="passwordError" class="text-danger mb-3" style="display: none;">Incorrect password.
+                            Please try again.</div>
                         <button type="submit" class="btn btn-success">Confirm</button>
                     </form>
                 </div>
@@ -172,12 +178,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let timeout;
+
+        function startTimer() {
+            clearTimeout(timeout);
+            timeout = setTimeout(logoutUser, 300000); // 5 minutes (300000ms) timeout
+        }
+
+        function logoutUser() {
+            alert("Session expired due to inactivity. Redirecting to login page.");
+            window.location.href = "../../controller/dashboard_logout.php";
+        }
+
+        // Reset timer on user activity
+        document.addEventListener("mousemove", startTimer);
+        document.addEventListener("keydown", startTimer);
+        document.addEventListener("mousedown", startTimer); // Detects clicks
+        document.addEventListener("wheel", startTimer); // Detects scrolling
+        document.addEventListener("touchstart", startTimer); // Detects mobile touch
+
+        startTimer(); // Initialize timer on page load
+
         // Toggle password visibility
         const togglePassword = document.getElementById('togglePassword');
         const adminPassword = document.getElementById('adminPassword');
 
         if (togglePassword && adminPassword) {
-            togglePassword.addEventListener('click', function() {
+            togglePassword.addEventListener('click', function () {
                 const type = adminPassword.getAttribute('type') === 'password' ? 'text' : 'password';
                 adminPassword.setAttribute('type', type);
 
@@ -194,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Clear password field and reset the toggle button when modal is closed
         const passwordConfirmationModal = document.getElementById('passwordConfirmationModal');
-        passwordConfirmationModal.addEventListener('hidden.bs.modal', function() {
+        passwordConfirmationModal.addEventListener('hidden.bs.modal', function () {
             document.getElementById('adminPassword').value = '';
             document.getElementById('passwordError').style.display = 'none';
 
@@ -213,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Handle Create Post button click
-        document.getElementById('createPostButton').addEventListener('click', function() {
+        document.getElementById('createPostButton').addEventListener('click', function () {
             const title = document.getElementById('title').value.trim();
             const content = document.getElementById('content').value.trim();
 
@@ -227,11 +254,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
 
         // Handle password confirmation form submission
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             const passwordConfirmationForm = document.getElementById('passwordConfirmationForm');
 
             if (passwordConfirmationForm) {
-                passwordConfirmationForm.addEventListener('submit', function(event) {
+                passwordConfirmationForm.addEventListener('submit', function (event) {
                     event.preventDefault();
 
                     const adminPassword = document.getElementById('adminPassword').value;
@@ -239,12 +266,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const actionData = JSON.parse(document.getElementById('actionData').value);
 
                     fetch('../../controller/admin_confirm_password.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                            },
-                            body: `adminPassword=${encodeURIComponent(adminPassword)}`
-                        })
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `adminPassword=${encodeURIComponent(adminPassword)}`
+                    })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -277,9 +304,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const formData = new FormData(form);
 
             fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                })
+                method: 'POST',
+                body: formData,
+            })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
