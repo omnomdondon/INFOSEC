@@ -1,8 +1,14 @@
 <?php
 // Database configuration
+// $HOST = 'localhost';
+// $USER = 'root';
+// $PASSWORD = '111522';
+// $DB = 'blog_db';
+// $PORT = 3306;
+
 $HOST = 'localhost';
 $USER = 'root';
-$PASSWORD = '111522';
+$PASSWORD = '';
 $DB = 'blog_db';
 $PORT = 3306;
 
